@@ -129,7 +129,8 @@ body{font-family:'Sarabun',system-ui,sans-serif;background:var(--bg);color:var(-
 .hist-amt{font-family:'Kanit';font-weight:700;font-size:16px;color:var(--navy);}
 .hist-note{font-size:12px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .hist-right{display:flex;align-items:center;gap:8px;flex:none;}
-.hist-thumb{width:52px;height:52px;border-radius:8px;object-fit:cover;cursor:pointer;border:2px solid var(--border);}
+.hist-thumb{width:64px;height:64px;border-radius:10px;object-fit:cover;cursor:pointer;border:2px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.1);}
+.hist-thumb:active{opacity:.8;}
 .hist-thumb-ph{width:52px;height:52px;border-radius:8px;background:var(--line);display:flex;align-items:center;justify-content:center;font-size:20px;border:1px dashed var(--border);}
 .hist-del{border:none;background:none;cursor:pointer;color:var(--muted2);font-size:12px;padding:4px 6px;border-radius:6px;}
 .hist-empty{padding:20px;text-align:center;font-size:13px;color:var(--muted);}
@@ -284,6 +285,21 @@ function badgeOf(it,done){
   return{cls:'soon',label:`ครบกำหนด วันที่ ${it.dueDay}`};
 }
 
+function leasingLogo(co){
+  const m={
+    'ASK':{bg:'#C8102E',fg:'#fff',txt:'ASK',sub:'#a00'},
+    'ราชธานี':{bg:'#003FA5',fg:'#fff',txt:'RCL',sub:'#002a70'},
+    'เงินติดล้อ':{bg:'#00A651',fg:'#fff',txt:'NGN',sub:'#007a3d'},
+    'กรุงศรีออโต้':{bg:'#FFB800',fg:'#1a1a1a',txt:'KSA',sub:'#e6a600'},
+    'ตรีเพชร':{bg:'#003087',fg:'#fff',txt:'TPI',sub:'#002060'},
+    'BENZ':{bg:'#1a1a1a',fg:'#C0C0C0',txt:'✦',sub:'#333'},
+    'BMW':{bg:'#1C69D4',fg:'#fff',txt:'BMW',sub:'#1450a8'},
+  };
+  const l=m[co];
+  if(!l)return `<div class="dk-icon" style="background:linear-gradient(135deg,#475569,#334155);">🚗</div>`;
+  const fs=l.txt.length>3?'10px':l.txt.length===3?'13px':'20px';
+  return `<div class="dk-icon" style="background:linear-gradient(145deg,${l.bg},${l.sub});color:${l.fg};font-size:${fs};font-family:'Kanit';font-weight:800;letter-spacing:-.5px;">${l.txt}</div>`;
+}
 function gcalUrl(type,item){
   const now=new Date(),todayD=now.getDate();
   let y=now.getFullYear(),m=now.getMonth();
@@ -360,7 +376,7 @@ function carHTML(c,urgent){
   const dueColor=bd.cls==='late'?'red':'';
   return `<div class="dk${urg?` urg-${urg.level}`:''}" id="card-${c.id}" style="position:relative;">${seal}
   <div class="dk-head">
-    <div class="dk-icon">🚗</div>
+    ${leasingLogo(c.financeCompany)}
     <div class="dk-title-wrap">
       <div class="dk-title">${esc(c.name)}</div>
       <div class="dk-sub">${c.financeCompany||'ค่างวดรถ'} · วันที่ ${c.dueDay} ของทุกเดือน</div>
@@ -501,14 +517,14 @@ function openPayModal(type,id){
   const key=type==='car'?'carLoans':'creditCards';
   const item=data[key].find(x=>x.id===id);if(!item)return;
   const defAmt=type==='car'?item.monthly:(item.minPay||'');
-  openOverlay(`<div class="sheet-grip"></div><h3 class="sh-title">บันทึกการชำระ</h3><p class="sh-sub">${esc(item.name)}</p><label class="field"><span class="field-lbl">จำนวนเงิน (บาท)</span><input class="field-inp" id="pay-amt" inputmode="numeric" value="${defAmt}"></label><label class="field"><span class="field-lbl">หมายเหตุ (ไม่บังคับ)</span><input class="field-inp" id="pay-note" placeholder="เช่น โอน app, หักบัญชี"></label><div class="img-area"><span class="field-lbl">แนบสลิป / หลักฐาน</span><div id="img-area-content"></div></div><div class="sh-actions"><button class="btn-sm" onclick="closeModal()">ยกเลิก</button><button class="btn-pay" onclick="recordPayment()">✓ บันทึก</button></div>`);
+  openOverlay(`<div class="sheet-grip"></div><h3 class="sh-title">บันทึกการชำระ</h3><p class="sh-sub">${esc(item.name)}</p><label class="field"><span class="field-lbl">จำนวนเงิน (บาท)</span><input class="field-inp" id="pay-amt" inputmode="numeric" value="${defAmt}"></label><label class="field"><span class="field-lbl">หมายเหตุ (ไม่บังคับ)</span><input class="field-inp" id="pay-note" placeholder="เช่น โอน app, หักบัญชี"></label><div class="img-area"><span class="field-lbl" style="font-size:14px;">📷 แนบสลิป / รูปหลักฐาน <span style="color:var(--muted2);font-weight:400;">(เก็บในประวัติ)</span></span><div id="img-area-content"></div></div><div class="sh-actions"><button class="btn-sm" onclick="closeModal()">ยกเลิก</button><button class="btn-pay" onclick="recordPayment()">✓ บันทึก</button></div>`);
   renderImgPreview();
 }
 
 function renderImgPreview(){
   const el=document.getElementById('img-area-content');if(!el)return;
-  if(pendingImg){el.innerHTML=`<div class="img-preview-wrap"><img class="img-preview" src="${pendingImg}" onclick="openLightboxDirect('${pendingImg}')"><div class="img-actions"><button class="img-remove" onclick="clearImg()">✕ ลบรูป</button><button class="img-change" onclick="pickImage()">เปลี่ยนรูป</button></div></div>`;}
-  else{el.innerHTML=`<button class="img-pick-btn" onclick="pickImage()"><span style="font-size:22px">📷</span><span>เลือกรูปภาพ / ถ่ายสลิป</span></button>`;}
+  if(pendingImg){el.innerHTML=`<div class="img-preview-wrap"><img class="img-preview" src="${pendingImg}" onclick="openLightboxDirect('${pendingImg}')" style="max-height:240px;"><div class="img-actions"><button class="img-remove" onclick="clearImg()">✕ ลบรูป</button><button class="img-change" onclick="pickImage()">เปลี่ยนรูป</button></div></div>`;}
+  else{el.innerHTML=`<button class="img-pick-btn" onclick="pickImage()" style="padding:22px;border-radius:14px;border:2px dashed #CBD5E1;"><span style="font-size:30px;display:block;margin-bottom:6px;">📷</span><span style="font-size:14px;font-weight:600;color:#475569;">ถ่ายสลิป / เลือกรูปจากคลัง</span></button>`;}
 }
 function pickImage(){document.getElementById('file-input').click();}
 function clearImg(){pendingImg=null;renderImgPreview();}
