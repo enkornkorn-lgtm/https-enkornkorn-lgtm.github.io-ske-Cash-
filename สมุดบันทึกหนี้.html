@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="หนี้สิน">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#143C2D">
+<title>สมุดบันทึกหนี้</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#F3EEE3;--paper2:#EAE2CF;--card:#FBF8F0;--green9:#143C2D;--green7:#235C44;--green5:#2E7D5B;--brass:#C7A14A;--brassd:#9C7A2B;--ink:#23201A;--muted:#7A7363;--paid:#3D8B5F;--late:#B23A2E;--soon:#9C7A2B;--orange:#C05A14;--line:rgba(35,32,26,.12);}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Sarabun',system-ui,sans-serif;background:repeating-linear-gradient(0deg,transparent 0 33px,rgba(35,32,26,.03) 33px 34px),var(--paper);color:var(--ink);min-height:100vh;}
+#app{max-width:680px;margin:0 auto;padding:18px;padding-bottom:40px;}
+.cover{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,var(--green9),var(--green7));border:2px solid var(--brass);border-radius:16px;padding:16px 18px;color:#F3EEE3;position:relative;overflow:hidden;box-shadow:0 6px 24px rgba(20,60,45,.25);}
+.cover::after{content:"";position:absolute;inset:5px;border:1px solid rgba(199,161,74,.35);border-radius:11px;pointer-events:none;}
+.cover-emblem{width:50px;height:50px;flex:none;border-radius:50%;border:2px solid var(--brass);color:var(--brass);font-family:'Kanit';font-size:26px;font-weight:600;display:flex;align-items:center;justify-content:center;}
+.cover-eyebrow{font-size:11px;letter-spacing:3px;color:var(--brass);text-transform:uppercase;}
+.cover-title{font-family:'Kanit';font-weight:700;font-size:28px;line-height:1.1;margin:2px 0;}
+.cover-sub{font-size:13px;color:rgba(243,238,227,.72);}
+.bell-btn{position:relative;flex:none;margin-left:auto;background:rgba(243,238,227,.15);border:1.5px solid rgba(199,161,74,.4);border-radius:50%;width:42px;height:42px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;}
+.bell-badge{position:absolute;top:-5px;right:-5px;background:var(--late);color:#fff;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid var(--green9);}
+.alert-panel{background:var(--card);border:1.5px solid var(--late);border-radius:14px;overflow:hidden;margin:14px 0;box-shadow:0 2px 12px rgba(178,58,46,.12);}
+.alert-head{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(178,58,46,.07);border-bottom:1px solid var(--line);}
+.alert-head-title{font-weight:600;font-size:14px;}
+.alert-head-btn{background:none;border:1px solid var(--line);border-radius:8px;padding:4px 10px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;font-family:'Sarabun';}
+.alert-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);}
+.alert-row:last-child{border-bottom:none;}
+.alert-overdue{border-left:4px solid var(--late);background:rgba(178,58,46,.05);}
+.alert-today{border-left:4px solid var(--orange);background:rgba(192,90,20,.05);}
+.alert-soon{border-left:4px solid var(--brass);background:rgba(199,161,74,.05);}
+.alert-dot{font-size:16px;flex:none;}
+.alert-info{flex:1;min-width:0;}
+.alert-name{display:block;font-family:'Kanit';font-weight:600;font-size:15px;}
+.alert-msg{display:block;font-size:12px;color:var(--muted);}
+.alert-amt{font-family:'Kanit';font-weight:600;font-size:15px;color:var(--green9);flex:none;}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0;}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;}
+.stat-main{grid-column:1/-1;background:linear-gradient(180deg,#fff,var(--card));border-color:var(--brass);}
+.stat-label{font-size:13px;color:var(--muted);}
+.stat-value{font-family:'Kanit';font-weight:600;font-size:30px;color:var(--green9);}
+.stat-value.sm{font-size:22px;}
+.stat-value.paid{color:var(--paid);}
+.block{margin-top:20px;}
+.block-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid var(--green9);}
+.block-head h2{font-family:'Kanit';font-weight:600;font-size:20px;color:var(--green9);}
+.btn-add{background:var(--green9);color:#F3EEE3;border:none;border-radius:20px;padding:7px 16px;font-family:'Sarabun';font-weight:600;font-size:14px;cursor:pointer;}
+.empty{background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:22px;text-align:center;color:var(--muted);font-size:14px;}
+.card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 0 rgba(255,255,255,.6) inset;}
+.card.card-urg{border-left-width:4px;}
+.card.card-urg-overdue{border-left-color:var(--late);}
+.card.card-urg-today{border-left-color:var(--orange);}
+.card.card-urg-soon{border-left-color:var(--brass);}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+.card-name{font-family:'Kanit';font-weight:600;font-size:18px;margin-bottom:4px;}
+.status{font-size:12px;font-weight:600;padding:2px 9px;border-radius:10px;display:inline-block;}
+.status.ok{background:rgba(61,139,95,.14);color:var(--paid);}
+.status.soon{background:rgba(156,122,43,.14);color:var(--soon);}
+.status.late{background:rgba(178,58,46,.13);color:var(--late);}
+.card-amt{text-align:right;flex:none;}
+.amt-big{display:block;font-family:'Kanit';font-weight:600;font-size:20px;color:var(--green9);}
+.amt-cap{font-size:11px;color:var(--muted);}
+.progress{height:8px;background:var(--paper2);border-radius:6px;margin:14px 0 5px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--green5),var(--green7));border-radius:6px;transition:width .5s ease;}
+.progress-meta{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);}
+.row-info{display:flex;justify-content:space-between;margin-top:10px;font-size:13px;color:var(--muted);flex-wrap:wrap;gap:4px;}
+.card-actions{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap;}
+.btn-pay{background:var(--brass);color:#23201A;border:none;border-radius:10px;padding:8px 16px;font-family:'Sarabun';font-weight:700;font-size:14px;cursor:pointer;}
+.btn-ghost{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:10px;padding:8px 12px;font-family:'Sarabun';font-weight:600;font-size:13px;cursor:pointer;}
+.btn-ghost.hist-toggle{border-color:var(--brass);color:var(--brassd);}
+.btn-ghost.hist-toggle.active{background:rgba(199,161,74,.12);}
+.btn-ghost.danger-btn:active{border-color:var(--late);color:var(--late);}
+.seal{position:absolute;width:88px;height:88px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;font-family:'Kanit';font-weight:700;font-size:14px;border:3px double;pointer-events:none;}
+.seal-static{right:14px;top:50%;transform:translateY(-50%) rotate(-13deg);border-color:var(--brass);color:var(--brassd);opacity:.85;width:74px;height:74px;font-size:12px;}
+.seal-anim{left:50%;top:50%;z-index:5;width:120px;height:120px;font-size:18px;border-color:var(--green5);color:var(--green5);animation:stamp 1.8s ease forwards;}
+@keyframes stamp{0%{opacity:0;transform:translate(-50%,-50%) rotate(-32deg) scale(2.4)}30%{opacity:1;transform:translate(-50%,-50%) rotate(-13deg) scale(.9)}45%{transform:translate(-50%,-50%) rotate(-13deg) scale(1.06)}60%{transform:translate(-50%,-50%) rotate(-13deg) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) rotate(-13deg) scale(1)}}
+.hist-panel{margin-top:14px;border-top:1px dashed var(--line);padding-top:12px;}
+.hist-hdr{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.hist-empty{font-size:13px;color:var(--muted);text-align:center;padding:10px 0;}
+.hist-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);}
+.hist-row:last-child{border-bottom:none;}
+.hist-left{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;}
+.hist-date{font-size:12px;color:var(--muted);}
+.hist-amt{font-family:'Kanit';font-weight:600;font-size:16px;color:var(--green9);}
+.hist-note{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hist-right{display:flex;align-items:center;gap:8px;flex:none;}
+.hist-thumb{width:56px;height:56px;border-radius:9px;object-fit:cover;cursor:pointer;border:2px solid var(--brass);}
+.hist-thumb-ph{width:56px;height:56px;border-radius:9px;background:var(--paper2);display:flex;align-items:center;justify-content:center;font-size:22px;border:1px dashed var(--line);}
+.hist-del{border:none;background:none;cursor:pointer;color:var(--muted);font-size:13px;padding:5px 7px;border-radius:6px;}
+.foot{text-align:center;color:var(--muted);font-size:12px;margin-top:24px;}
+/* overlay */
+.overlay{position:fixed;inset:0;background:rgba(20,40,33,.45);backdrop-filter:blur(3px);display:none;flex-direction:column;justify-content:flex-end;align-items:center;z-index:100;}
+.sheet{background:var(--paper);width:100%;max-width:680px;border-radius:20px 20px 0 0;border-top:3px solid var(--brass);padding:12px 20px 32px;animation:rise .22s ease;max-height:90vh;overflow-y:auto;}
+.sheet-grip{width:40px;height:4px;background:var(--line);border-radius:4px;margin:0 auto 14px;}
+@keyframes rise{from{transform:translateY(36px);opacity:.4}to{transform:none;opacity:1}}
+.sheet-title{font-family:'Kanit';font-weight:600;font-size:20px;margin-bottom:6px;color:var(--green9);}
+.sheet-sub{font-size:14px;color:var(--muted);margin-bottom:16px;}
+.field{display:block;margin-bottom:13px;}
+.field-label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px;}
+.field-input{width:100%;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:11px 13px;font-family:'Sarabun';font-size:16px;color:var(--ink);outline:none;}
+.field-input:focus{border-color:var(--brass);}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.sheet-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px;}
+.sheet-actions .btn-pay,.sheet-actions .btn-ghost{padding:11px 22px;}
+.img-area{margin-bottom:14px;}
+.img-pick-btn{width:100%;border:2px dashed var(--line);background:var(--paper);border-radius:12px;padding:18px;cursor:pointer;font-family:'Sarabun';font-size:15px;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:10px;margin-top:6px;}
+.img-preview-wrap{margin-top:8px;display:flex;flex-direction:column;gap:8px;align-items:flex-start;}
+.img-preview{max-width:100%;max-height:200px;border-radius:10px;object-fit:contain;border:2px solid var(--brass);cursor:pointer;}
+.img-actions{display:flex;gap:8px;}
+.img-remove{border:1px solid var(--late);background:transparent;color:var(--late);border-radius:8px;padding:5px 12px;font-size:13px;cursor:pointer;font-family:'Sarabun';font-weight:600;}
+.img-change{border:1px solid var(--brass);background:transparent;color:var(--brassd);border-radius:8px;padding:5px 12px;font-size:13px;cursor:pointer;font-family:'Sarabun';font-weight:600;}
+.ntoggle-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;}
+.ntoggle-label{font-weight:600;font-size:15px;margin-bottom:4px;}
+.ntoggle-sub{font-size:13px;color:var(--muted);}
+.ntoggle-btn{width:58px;height:30px;border-radius:15px;border:1.5px solid var(--line);background:var(--paper2);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:'Sarabun';flex:none;}
+.ntoggle-btn.on{background:var(--green5);border-color:var(--green7);color:#fff;}
+.warnday-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+.warnday-chip{border:1.5px solid var(--line);background:var(--card);border-radius:20px;padding:6px 14px;font-size:14px;cursor:pointer;font-family:'Sarabun';color:var(--muted);}
+.warnday-chip.sel{background:var(--green9);border-color:var(--green9);color:#F3EEE3;}
+.notif-info{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--muted);line-height:1.55;margin:16px 0;}
+.lightbox{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;cursor:pointer;padding:20px;}
+.lightbox-img{max-width:min(90vw,800px);max-height:86vh;border-radius:12px;object-fit:contain;}
+.lightbox-close{position:fixed;top:16px;right:16px;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);color:#fff;border-radius:50%;width:40px;height:40px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+@media(min-width:560px){.overlay{justify-content:center;padding:18px;}.sheet{border-radius:18px;border-top:none;border:2px solid var(--brass);}.sheet-grip{display:none;}}
+@media(prefers-reduced-motion:reduce){.seal-anim{animation:none;display:none;}.progress-fill{transition:none;}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="cover">
+    <div class="cover-emblem">฿</div>
+    <div class="cover-text">
+      <div class="cover-eyebrow">สมุดบันทึก</div>
+      <h1 class="cover-title">การจ่ายหนี้</h1>
+      <div class="cover-sub">ค่างวดรถ · บัตรเครดิต</div>
+    </div>
+    <button class="bell-btn" id="bell-btn" onclick="openNotifModal()">🔕</button>
+  </header>
+  <div id="alert-panel" class="alert-panel" style="display:none;"></div>
+  <div id="stats" class="stat-grid"></div>
+  <section class="block">
+    <div class="block-head">
+      <h2>ค่างวดรถ</h2>
+      <button class="btn-add" onclick="openAddModal('car')">+ เพิ่ม</button>
+    </div>
+    <div id="car-list"></div>
+  </section>
+  <section class="block">
+    <div class="block-head">
+      <h2>บัตรเครดิต</h2>
+      <button class="btn-add" onclick="openAddModal('card')">+ เพิ่ม</button>
+    </div>
+    <div id="card-list"></div>
+  </section>
+  <footer class="foot">บันทึกในเครื่อง · ใช้งานออฟไลน์ได้</footer>
+</div>
+
+<div class="overlay" id="overlay" onclick="overlayClick(event)">
+  <div class="sheet" id="sheet" onclick="event.stopPropagation()"></div>
+</div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <img class="lightbox-img" id="lightbox-img" alt="สลิป">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+</div>
+
+<input type="file" id="file-input" accept="image/*" style="display:none" onchange="onFilePick(event)">
+
+<script>
+// ───── helpers ─────
+const baht=n=>'฿'+Number(n||0).toLocaleString('th-TH',{maximumFractionDigits:0});
+const ymOf=d=>`${d.getFullYear()}-${d.getMonth()+1}`;
+const todayYM=()=>ymOf(new Date());
+const todayISO=()=>new Date().toISOString().slice(0,10);
+const thaiDate=iso=>iso?new Date(iso).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'}):'';
+const uid=()=>Math.random().toString(36).slice(2,9);
+const num=v=>{const x=parseFloat(String(v||'').replace(/,/g,''));return isNaN(x)?0:x;};
+const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+// ───── state ─────
+const DKEY='debt:data', NKEY='debt:notif';
+let data={carLoans:[],creditCards:[]};
+let notifPrefs={browserEnabled:false,warnDays:3,lastNotifDate:null};
+const imgCache={};
+const histOpen=new Set();
+let justPaidId=null,justPaidTimer=null;
+let modalMode=null,modalItemId=null,pendingImg=null,warnDraft=3;
+
+// ───── storage ─────
+function loadAll(){
+  try{const d=localStorage.getItem(DKEY);if(d)data=JSON.parse(d);}catch(e){}
+  try{const n=localStorage.getItem(NKEY);if(n)notifPrefs={...notifPrefs,...JSON.parse(n)};}catch(e){}
+  warnDraft=notifPrefs.warnDays||3;
+}
+function saveData(){try{localStorage.setItem(DKEY,JSON.stringify(data));}catch(e){alert('พื้นที่เก็บข้อมูลเต็ม ลองลบรูปภาพเก่าออกก่อน');}}
+function saveNotif(){try{localStorage.setItem(NKEY,JSON.stringify(notifPrefs));}catch(e){}}
+function saveImg(key,b64){try{localStorage.setItem(key,b64);return true;}catch(e){return false;}}
+function delImg(key){if(!key)return;try{localStorage.removeItem(key);}catch(e){}delete imgCache[key];}
+function loadImgsFor(pmts){(pmts||[]).forEach(p=>{if(p.imgKey&&!imgCache[p.imgKey]){const v=localStorage.getItem(p.imgKey);if(v)imgCache[p.imgKey]=v;}});}
+
+// ───── urgency ─────
+function calcUrgent(){
+  const today=new Date().getDate();
+  const isPaid=it=>it.lastPaid&&ymOf(new Date(it.lastPaid))===todayYM();
+  const items=[];
+  const check=(it,type)=>{
+    const done=type==='car'?it.paid>=it.total:it.balance<=0;
+    if(done||isPaid(it))return;
+    const diff=it.dueDay-today;
+    let level,dd;
+    if(diff<0){level='overdue';dd=Math.abs(diff);}
+    else if(diff===0){level='today';dd=0;}
+    else if(diff<=notifPrefs.warnDays){level='soon';dd=diff;}
+    else return;
+    const amt=type==='car'?it.monthly:Math.min(it.minPay||0,it.balance);
+    items.push({id:it.id,name:it.name,type,level,diff:dd,dueDay:it.dueDay,amt});
+  };
+  data.carLoans.forEach(c=>check(c,'car'));
+  data.creditCards.forEach(c=>check(c,'card'));
+  const p={overdue:0,today:1,soon:2};
+  return items.sort((a,b)=>p[a.level]-p[b.level]||a.diff-b.diff);
+}
+
+// ───── derived ─────
+function isPaidThisMo(it){return it.lastPaid&&ymOf(new Date(it.lastPaid))===todayYM();}
+function statusOf(it,done){
+  if(done)return{label:'ผ่อนครบแล้ว',cls:'ok'};
+  if(isPaidThisMo(it))return{label:'ชำระแล้วเดือนนี้',cls:'ok'};
+  if(new Date().getDate()>it.dueDay)return{label:`เกินกำหนด (วันที่ ${it.dueDay})`,cls:'late'};
+  return{label:`ครบกำหนด วันที่ ${it.dueDay}`,cls:'soon'};
+}
+
+// ───── render ─────
+function renderAll(){renderBell();renderAlerts();renderStats();renderCars();renderCards();}
+
+function renderBell(){
+  const notifEnabled=notifPrefs.browserEnabled&&typeof Notification!=='undefined'&&Notification.permission==='granted';
+  const urgent=calcUrgent();
+  const btn=document.getElementById('bell-btn');
+  if(!btn)return;
+  btn.innerHTML=(notifEnabled?'🔔':'🔕')+(urgent.length?`<span class="bell-badge">${urgent.length}</span>`:'');
+}
+
+function renderAlerts(){
+  const urgent=calcUrgent();
+  const el=document.getElementById('alert-panel');
+  if(!el)return;
+  if(!urgent.length){el.style.display='none';return;}
+  el.style.display='';
+  el.innerHTML=`<div class="alert-head"><span class="alert-head-title">🔔 การแจ้งเตือนการชำระ</span><button class="alert-head-btn" onclick="openNotifModal()">ตั้งค่า ⚙</button></div>`
+    +urgent.map(u=>`<div class="alert-row alert-${u.level}"><span class="alert-dot">${u.level==='overdue'?'🔴':u.level==='today'?'🟠':'🟡'}</span><div class="alert-info"><span class="alert-name">${esc(u.name)}</span><span class="alert-msg">${u.level==='overdue'?`เกินกำหนด ${u.diff} วัน`:u.level==='today'?'ครบกำหนดชำระวันนี้':`ครบกำหนดในอีก ${u.diff} วัน (วันที่ ${u.dueDay})`}</span></div><span class="alert-amt">${baht(u.amt)}</span></div>`).join('');
+}
+
+function renderStats(){
+  const carR=data.carLoans.reduce((s,c)=>s+Math.max(0,c.total-c.paid)*c.monthly,0);
+  const cardR=data.creditCards.reduce((s,c)=>s+Math.max(0,c.balance),0);
+  const total=carR+cardR;
+  const due=data.carLoans.reduce((s,c)=>s+(c.paid<c.total&&!isPaidThisMo(c)?c.monthly:0),0)+data.creditCards.reduce((s,c)=>s+(c.balance>0&&!isPaidThisMo(c)?Math.min(c.minPay||0,c.balance):0),0);
+  const paid=[...data.carLoans,...data.creditCards].reduce((s,it)=>s+(it.payments||[]).reduce((a,p)=>a+p.amount,0),0);
+  const el=document.getElementById('stats');
+  if(el)el.innerHTML=`<div class="stat stat-main"><span class="stat-label">หนี้คงเหลือทั้งหมด</span><span class="stat-value">${baht(total)}</span></div><div class="stat"><span class="stat-label">ต้องจ่ายเดือนนี้</span><span class="stat-value sm">${baht(due)}</span></div><div class="stat"><span class="stat-label">จ่ายไปแล้วทั้งหมด</span><span class="stat-value sm paid">${baht(paid)}</span></div>`;
+}
+
+function renderCars(){
+  const el=document.getElementById('car-list');if(!el)return;
+  if(!data.carLoans.length){el.innerHTML='<div class="empty">ยังไม่มีค่างวดรถ — กด "เพิ่ม" เพื่อเริ่มบันทึกการผ่อน</div>';return;}
+  const urgent=calcUrgent();
+  el.innerHTML=data.carLoans.map(c=>carHTML(c,urgent)).join('');
+  data.carLoans.forEach(c=>{if(histOpen.has(c.id)){loadImgsFor(c.payments||[]);renderHist(c.id,'car');}});
+}
+
+function renderCards(){
+  const el=document.getElementById('card-list');if(!el)return;
+  if(!data.creditCards.length){el.innerHTML='<div class="empty">ยังไม่มีบัตรเครดิต — กด "เพิ่ม" เพื่อเริ่มบันทึกยอด</div>';return;}
+  const urgent=calcUrgent();
+  el.innerHTML=data.creditCards.map(c=>cardHTML(c,urgent)).join('');
+  data.creditCards.forEach(c=>{if(histOpen.has(c.id)){loadImgsFor(c.payments||[]);renderHist(c.id,'card');}});
+}
+
+function carHTML(c,urgent){
+  const done=c.paid>=c.total,pct=Math.min(100,Math.round((c.paid/c.total)*100));
+  const remain=Math.max(0,c.total-c.paid)*c.monthly,st=statusOf(c,done);
+  const pmts=c.payments||[],isOpen=histOpen.has(c.id),urg=urgent.find(u=>u.id===c.id);
+  const seal=justPaidId===c.id?'<div class="seal seal-anim">ชำระแล้ว</div>':done?'<div class="seal seal-static">ผ่อนครบ</div>':'';
+  return `<article class="card${urg?` card-urg card-urg-${urg.level}`:''}" id="card-${c.id}">${seal}<div class="card-top"><div><h3 class="card-name">${esc(c.name)}</h3><span class="status ${st.cls}">${st.label}</span></div><div class="card-amt"><span class="amt-big">${baht(c.monthly)}</span><span class="amt-cap">ต่องวด</span></div></div><div class="progress"><div class="progress-fill" style="width:${pct}%"></div></div><div class="progress-meta"><span>${c.paid} / ${c.total} งวด</span><span>คงเหลือ ${baht(remain)}</span></div><div class="card-actions">${!done?`<button class="btn-pay" onclick="openPayModal('car','${c.id}')">บันทึกจ่ายงวด</button>`:''}<button class="btn-ghost hist-toggle${isOpen?' active':''}" onclick="toggleHist('${c.id}','car')">${isOpen?'▲ ซ่อน':`▼ ประวัติ (${pmts.length})`}</button><button class="btn-ghost" onclick="openEditModal('car','${c.id}')">แก้ไข</button><button class="btn-ghost danger-btn" onclick="removeItem('car','${c.id}')">ลบ</button></div><div id="hist-${c.id}" style="display:${isOpen?'block':'none'}"></div></article>`;
+}
+
+function cardHTML(c,urgent){
+  const done=c.balance<=0,st=statusOf(c,done);
+  const pmts=c.payments||[],isOpen=histOpen.has(c.id),urg=urgent.find(u=>u.id===c.id);
+  const seal=justPaidId===c.id?'<div class="seal seal-anim">ชำระแล้ว</div>':done?'<div class="seal seal-static">ปิดยอด</div>':'';
+  const lastP=pmts[0]?`ล่าสุด ${thaiDate(pmts[0].date)} · ${baht(pmts[0].amount)}`:'';
+  return `<article class="card${urg?` card-urg card-urg-${urg.level}`:''}" id="card-${c.id}">${seal}<div class="card-top"><div><h3 class="card-name">${esc(c.name)}</h3><span class="status ${st.cls}">${st.label}</span></div><div class="card-amt"><span class="amt-big">${baht(c.balance)}</span><span class="amt-cap">ยอดคงเหลือ</span></div></div><div class="row-info"><span>ขั้นต่ำ ${baht(c.minPay)}</span><span>${lastP}</span></div><div class="card-actions">${!done?`<button class="btn-pay" onclick="openPayModal('card','${c.id}')">บันทึกจ่าย</button>`:''}<button class="btn-ghost hist-toggle${isOpen?' active':''}" onclick="toggleHist('${c.id}','card')">${isOpen?'▲ ซ่อน':`▼ ประวัติ (${pmts.length})`}</button><button class="btn-ghost" onclick="openEditModal('card','${c.id}')">แก้ไข</button><button class="btn-ghost danger-btn" onclick="removeItem('card','${c.id}')">ลบ</button></div><div id="hist-${c.id}" style="display:${isOpen?'block':'none'}"></div></article>`;
+}
+
+function renderHist(id,type){
+  const el=document.getElementById('hist-'+id);if(!el)return;
+  const key=type==='car'?'carLoans':'creditCards';
+  const item=data[key].find(x=>x.id===id);
+  const pmts=item?.payments||[];
+  if(!pmts.length){el.innerHTML='<div class="hist-panel"><div class="hist-empty">ยังไม่มีประวัติการชำระ</div></div>';return;}
+  el.innerHTML='<div class="hist-panel"><div class="hist-hdr">ประวัติการชำระ</div>'+pmts.map(p=>{
+    const thumb=p.imgKey&&imgCache[p.imgKey]?`<img class="hist-thumb" src="${imgCache[p.imgKey]}" onclick="openLightbox('${p.imgKey}')" alt="สลิป">`:p.imgKey?'<div class="hist-thumb-ph">📷</div>':'';
+    return `<div class="hist-row"><div class="hist-left"><span class="hist-date">${thaiDate(p.date)}</span><span class="hist-amt">${baht(p.amount)}</span>${p.note?`<span class="hist-note">${esc(p.note)}</span>`:''}</div><div class="hist-right">${thumb}<button class="hist-del" onclick="deletePayment('${type}','${id}','${p.id}','${p.imgKey||''}')">✕</button></div></div>`;
+  }).join('')+'</div>';
+}
+
+function toggleHist(id,type){
+  const el=document.getElementById('hist-'+id);
+  const btn=document.querySelector(`#card-${id} .hist-toggle`);
+  if(histOpen.has(id)){
+    histOpen.delete(id);
+    if(el)el.style.display='none';
+    if(btn){btn.classList.remove('active');const key=type==='car'?'carLoans':'creditCards';const item=data[key].find(x=>x.id===id);btn.textContent=`▼ ประวัติ (${(item?.payments||[]).length})`;}
+  }else{
+    histOpen.add(id);
+    const key=type==='car'?'carLoans':'creditCards';
+    const item=data[key].find(x=>x.id===id);
+    loadImgsFor(item?.payments||[]);
+    if(el)el.style.display='block';
+    renderHist(id,type);
+    if(btn){btn.classList.add('active');btn.textContent='▲ ซ่อน';}
+  }
+}
+
+// ───── modal ─────
+function openOverlay(html){
+  document.getElementById('sheet').innerHTML=html;
+  document.getElementById('overlay').style.display='flex';
+}
+function closeModal(){
+  document.getElementById('overlay').style.display='none';
+  pendingImg=null;modalMode=null;modalItemId=null;
+}
+function overlayClick(e){if(e.target===document.getElementById('overlay'))closeModal();}
+
+function openAddModal(type){
+  modalMode='add-'+type;modalItemId=null;pendingImg=null;
+  const dueDay=type==='car'?5:25;
+  openOverlay(`<div class="sheet-grip"></div><h3 class="sheet-title">เพิ่ม${type==='car'?'ค่างวดรถ':'บัตรเครดิต'}</h3>${addEditFields(type,null,dueDay)}<div class="sheet-actions"><button class="btn-ghost" onclick="closeModal()">ยกเลิก</button><button class="btn-pay" onclick="saveAddEdit()">บันทึก</button></div>`);
+}
+
+function openEditModal(type,id){
+  modalMode='edit-'+type;modalItemId=id;pendingImg=null;
+  const key=type==='car'?'carLoans':'creditCards';
+  const item=data[key].find(x=>x.id===id);if(!item)return;
+  openOverlay(`<div class="sheet-grip"></div><h3 class="sheet-title">แก้ไข${type==='car'?'ค่างวดรถ':'บัตรเครดิต'}</h3>${addEditFields(type,item,item.dueDay)}<div class="sheet-actions"><button class="btn-ghost" onclick="closeModal()">ยกเลิก</button><button class="btn-pay" onclick="saveAddEdit()">บันทึก</button></div>`);
+}
+
+function addEditFields(type,item,dueDay){
+  if(type==='car'){
+    return `<label class="field"><span class="field-label">ชื่อรถ / สัญญา</span><input class="field-input" id="f-name" value="${esc(item?.name||'')}" placeholder="เช่น Toyota Yaris"></label><label class="field"><span class="field-label">ยอดผ่อนต่องวด (บาท)</span><input class="field-input" id="f-monthly" inputmode="numeric" value="${item?.monthly||''}"></label><div class="grid2"><label class="field"><span class="field-label">จำนวนงวดทั้งหมด</span><input class="field-input" id="f-total" inputmode="numeric" value="${item?.total||''}"></label><label class="field"><span class="field-label">ผ่อนไปแล้ว (งวด)</span><input class="field-input" id="f-paid" inputmode="numeric" value="${item?.paid||0}"></label></div><label class="field"><span class="field-label">วันครบกำหนด (วันที่)</span><input class="field-input" id="f-dueday" inputmode="numeric" value="${dueDay||5}"></label>`;
+  }else{
+    return `<label class="field"><span class="field-label">ชื่อบัตร / ธนาคาร</span><input class="field-input" id="f-name" value="${esc(item?.name||'')}" placeholder="เช่น KBank Visa"></label><label class="field"><span class="field-label">ยอดคงเหลือ (บาท)</span><input class="field-input" id="f-balance" inputmode="numeric" value="${item?.balance||''}"></label><div class="grid2"><label class="field"><span class="field-label">ยอดขั้นต่ำ (บาท)</span><input class="field-input" id="f-minpay" inputmode="numeric" value="${item?.minPay||''}"></label><label class="field"><span class="field-label">วันครบกำหนด</span><input class="field-input" id="f-dueday" inputmode="numeric" value="${dueDay||25}"></label></div>`;
+  }
+}
+
+function saveAddEdit(){
+  const type=modalMode.replace('add-','').replace('edit-','');
+  const name=document.getElementById('f-name')?.value.trim()||'';
+  const dueDay=Math.min(31,Math.max(1,num(document.getElementById('f-dueday')?.value)||1));
+  if(type==='car'){
+    const monthly=num(document.getElementById('f-monthly')?.value);
+    const total=Math.max(1,Math.round(num(document.getElementById('f-total')?.value)));
+    const paid=Math.max(0,Math.round(num(document.getElementById('f-paid')?.value)));
+    const item={name:name||'ค่างวดรถ',monthly,total,paid,dueDay};
+    if(modalMode.startsWith('edit')){data.carLoans=data.carLoans.map(c=>c.id===modalItemId?{...c,...item}:c);}
+    else{data.carLoans.push({id:uid(),payments:[],...item});}
+  }else{
+    const balance=num(document.getElementById('f-balance')?.value);
+    const minPay=num(document.getElementById('f-minpay')?.value);
+    const item={name:name||'บัตรเครดิต',balance,minPay,dueDay};
+    if(modalMode.startsWith('edit')){data.creditCards=data.creditCards.map(c=>c.id===modalItemId?{...c,...item}:c);}
+    else{data.creditCards.push({id:uid(),payments:[],...item});}
+  }
+  saveData();closeModal();renderAll();
+}
+
+function openPayModal(type,id){
+  modalMode='pay-'+type;modalItemId=id;pendingImg=null;
+  const key=type==='car'?'carLoans':'creditCards';
+  const item=data[key].find(x=>x.id===id);if(!item)return;
+  const defAmt=type==='car'?item.monthly:(item.minPay||'');
+  openOverlay(`<div class="sheet-grip"></div><h3 class="sheet-title">บันทึกการชำระ</h3><p class="sheet-sub">${esc(item.name)}</p><label class="field"><span class="field-label">จำนวนเงิน (บาท)</span><input class="field-input" id="pay-amt" inputmode="numeric" value="${defAmt}"></label><label class="field"><span class="field-label">หมายเหตุ (ไม่บังคับ)</span><input class="field-input" id="pay-note" placeholder="เช่น โอน app, หักบัญชี"></label><div class="img-area"><span class="field-label">แนบสลิป / รูปหลักฐาน</span><div id="img-area-content"></div></div><div class="sheet-actions"><button class="btn-ghost" onclick="closeModal()">ยกเลิก</button><button class="btn-pay" id="pay-btn" onclick="recordPayment()">✓ บันทึก</button></div>`);
+  renderImgPreview();
+}
+
+function renderImgPreview(){
+  const el=document.getElementById('img-area-content');if(!el)return;
+  if(pendingImg){
+    el.innerHTML=`<div class="img-preview-wrap"><img class="img-preview" src="${pendingImg}" onclick="openLightboxDirect('${pendingImg}')"><div class="img-actions"><button class="img-remove" onclick="clearImg()">✕ ลบรูป</button><button class="img-change" onclick="pickImage()">เปลี่ยนรูป</button></div></div>`;
+  }else{
+    el.innerHTML=`<button class="img-pick-btn" onclick="pickImage()"><span style="font-size:22px">📷</span><span>เลือกรูปภาพ / ถ่ายสลิป</span></button>`;
+  }
+}
+
+function pickImage(){document.getElementById('file-input').click();}
+function clearImg(){pendingImg=null;renderImgPreview();}
+
+async function onFilePick(e){
+  const file=e.target.files?.[0];if(!file)return;
+  const el=document.getElementById('img-area-content');
+  if(el)el.innerHTML='<div style="padding:16px;text-align:center;color:var(--muted);font-size:14px;">⏳ กำลังโหลดรูปภาพ…</div>';
+  try{pendingImg=await compressImage(file);}catch(err){pendingImg=null;}
+  renderImgPreview();
+  e.target.value='';
+}
+
+function compressImage(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onerror=reject;
+    reader.onload=ev=>{
+      const img=new Image();
+      img.onerror=reject;
+      img.onload=()=>{
+        const MAX=960;let w=img.width,h=img.height;
+        if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
+        const c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(c.toDataURL('image/jpeg',0.7));
+      };
+      img.src=ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function recordPayment(){
+  const amt=num(document.getElementById('pay-amt')?.value);
+  if(!amt||amt<=0){document.getElementById('pay-amt')?.focus();return;}
+  const note=(document.getElementById('pay-note')?.value||'').trim();
+  const type=modalMode.replace('pay-','');
+  const key=type==='car'?'carLoans':'creditCards';
+  const idx=data[key].findIndex(x=>x.id===modalItemId);if(idx===-1){closeModal();return;}
+  const pmt={id:uid(),date:todayISO(),amount:amt,note,imgKey:null};
+  if(pendingImg){
+    pmt.imgKey='debt-img:'+pmt.id;
+    const ok=saveImg(pmt.imgKey,pendingImg);
+    if(ok)imgCache[pmt.imgKey]=pendingImg;else pmt.imgKey=null;
+  }
+  const item=data[key][idx];
+  const newPmts=[pmt,...(item.payments||[])];
+  if(type==='car'){data[key][idx]={...item,paid:Math.min(item.total,item.paid+1),lastPaid:pmt.date,payments:newPmts};}
+  else{data[key][idx]={...item,balance:Math.max(0,item.balance-amt),lastPaid:pmt.date,payments:newPmts};}
+  saveData();pendingImg=null;
+  const id=modalItemId;
+  justPaidId=id;if(justPaidTimer)clearTimeout(justPaidTimer);
+  justPaidTimer=setTimeout(()=>{justPaidId=null;renderAll();},1800);
+  closeModal();renderAll();
+}
+
+function deletePayment(type,itemId,pmtId,imgKey){
+  if(!confirm('ลบรายการนี้?'))return;
+  delImg(imgKey||null);
+  const key=type==='car'?'carLoans':'creditCards';
+  const idx=data[key].findIndex(x=>x.id===itemId);if(idx===-1)return;
+  const item=data[key][idx];
+  const pmt=(item.payments||[]).find(p=>p.id===pmtId);
+  const newPmts=(item.payments||[]).filter(p=>p.id!==pmtId);
+  const newLastPaid=newPmts[0]?.date||null;
+  if(type==='car'){data[key][idx]={...item,paid:Math.max(0,item.paid-1),lastPaid:newLastPaid,payments:newPmts};}
+  else{data[key][idx]={...item,balance:(item.balance||0)+(pmt?.amount||0),lastPaid:newLastPaid,payments:newPmts};}
+  saveData();renderAll();
+  // re-render hist if open
+  if(histOpen.has(itemId))renderHist(itemId,type);
+}
+
+function removeItem(type,id){
+  if(!confirm('ลบรายการนี้ทั้งหมด รวมประวัติการชำระ?'))return;
+  const key=type==='car'?'carLoans':'creditCards';
+  const item=data[key].find(x=>x.id===id);
+  (item?.payments||[]).forEach(p=>delImg(p.imgKey));
+  data[key]=data[key].filter(x=>x.id!==id);
+  histOpen.delete(id);
+  saveData();renderAll();
+}
+
+// ───── lightbox ─────
+function openLightbox(imgKey){
+  const src=imgCache[imgKey];if(!src)return;
+  document.getElementById('lightbox-img').src=src;
+  document.getElementById('lightbox').style.display='flex';
+}
+function openLightboxDirect(src){
+  document.getElementById('lightbox-img').src=src;
+  document.getElementById('lightbox').style.display='flex';
+}
+function closeLightbox(){document.getElementById('lightbox').style.display='none';}
+
+// ───── notifications ─────
+function openNotifModal(){
+  warnDraft=notifPrefs.warnDays||3;
+  const notifEnabled=notifPrefs.browserEnabled&&typeof Notification!=='undefined'&&Notification.permission==='granted';
+  const perm=typeof Notification!=='undefined'?Notification.permission:'unsupported';
+  const permMsg=perm==='denied'?'⛔ ถูกบล็อก — แก้ไขในการตั้งค่าเบราว์เซอร์':perm==='unsupported'?'ไม่รองรับในเบราว์เซอร์นี้':notifEnabled?'✅ เปิดใช้งานแล้ว':'แจ้งเตือนเมื่อเปิดแอปในวันครบกำหนด';
+  const showBtn=perm!=='denied'&&perm!=='unsupported';
+  openOverlay(`<div class="sheet-grip"></div><h3 class="sheet-title">🔔 ตั้งค่าการแจ้งเตือน</h3><div class="ntoggle-row"><div><div class="ntoggle-label">แจ้งเตือนทางเบราว์เซอร์</div><div class="ntoggle-sub">${permMsg}</div></div>${showBtn?`<button class="ntoggle-btn${notifEnabled?' on':''}" id="ntbtn" onclick="toggleBrowserNotif()">${notifEnabled?'เปิด':'ปิด'}</button>`:''}</div><div class="field" style="margin-top:18px"><span class="field-label">แจ้งเตือนล่วงหน้ากี่วัน</span><div class="warnday-row" id="warnday-row">${renderWarnChips()}</div></div><div class="notif-info">💡 แจ้งเตือนจะปรากฏเมื่อเปิดแอปในวันที่ครบกำหนด หรือก่อนถึงกำหนดตามจำนวนวันที่ตั้งไว้</div><div class="sheet-actions"><button class="btn-ghost" onclick="closeModal()">ปิด</button><button class="btn-pay" onclick="saveNotifSettings()">บันทึก</button></div>`);
+}
+
+function renderWarnChips(){
+  return [1,2,3,5,7].map(d=>`<button class="warnday-chip${warnDraft===d?' sel':''}" onclick="selWarn(${d})">${d} วัน</button>`).join('');
+}
+
+function selWarn(d){
+  warnDraft=d;
+  const el=document.getElementById('warnday-row');
+  if(el)el.innerHTML=renderWarnChips();
+}
+
+async function toggleBrowserNotif(){
+  if(!notifPrefs.browserEnabled){
+    if(typeof Notification==='undefined')return;
+    if(Notification.permission==='default'){
+      const perm=await Notification.requestPermission();
+      if(perm==='granted'){
+        notifPrefs.browserEnabled=true;saveNotif();
+        try{new Notification('✅ เปิดการแจ้งเตือนแล้ว',{body:'คุณจะได้รับแจ้งเตือนเมื่อครบกำหนดชำระ'});}catch(e){}
+      }
+    }else if(Notification.permission==='granted'){notifPrefs.browserEnabled=true;saveNotif();}
+  }else{notifPrefs.browserEnabled=false;saveNotif();}
+  renderBell();
+  // re-render toggle
+  const btn=document.getElementById('ntbtn');
+  if(btn){const on=notifPrefs.browserEnabled&&Notification.permission==='granted';btn.className='ntoggle-btn'+(on?' on':'');btn.textContent=on?'เปิด':'ปิด';}
+}
+
+function saveNotifSettings(){
+  notifPrefs.warnDays=Math.max(1,Math.min(14,warnDraft));
+  saveNotif();closeModal();renderAlerts();renderBell();
+}
+
+function checkAndNotifyOnLoad(){
+  if(!notifPrefs.browserEnabled)return;
+  if(typeof Notification==='undefined'||Notification.permission!=='granted')return;
+  if(notifPrefs.lastNotifDate===todayISO())return;
+  const urgent=calcUrgent();if(!urgent.length)return;
+  const overdue=urgent.filter(u=>u.level==='overdue');
+  const title=overdue.length?`⚠️ มี ${overdue.length} รายการเกินกำหนด`:`🔔 ใกล้ถึงกำหนดชำระ ${urgent.length} รายการ`;
+  const body=urgent.map(u=>u.level==='overdue'?`${u.name} เกินกำหนด ${u.diff} วัน`:u.level==='today'?`${u.name} ครบกำหนดวันนี้`:`${u.name} อีก ${u.diff} วัน`).join('\n');
+  try{new Notification(title,{body});}catch(e){}
+  notifPrefs.lastNotifDate=todayISO();saveNotif();
+}
+
+// ───── init ─────
+loadAll();
+renderAll();
+checkAndNotifyOnLoad();
+</script>
+</body>
+</html>
