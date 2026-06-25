@@ -789,7 +789,24 @@ if(FB_OK&&fbRef){
   // 🔥 Real-time sync — อัปเดตอัตโนมัติทุกอุปกรณ์
   fbRef.on('value',snapshot=>{
     const val=snapshot.val();
-    if(val){data={carLoans:val.carLoans||[],creditCards:val.creditCards||[]};}
+    if(val&&(val.carLoans||val.creditCards)){
+      // มีข้อมูลใน Firebase → ใช้ Firebase
+      data={carLoans:val.carLoans||[],creditCards:val.creditCards||[]};
+    } else {
+      // Firebase ว่าง → ตรวจ localStorage แล้วย้ายขึ้น Firebase
+      try{
+        const local=localStorage.getItem(DKEY);
+        if(local){
+          const ld=JSON.parse(local);
+          const hasData=(ld.carLoans||[]).length>0||(ld.creditCards||[]).length>0;
+          if(hasData){
+            data=ld;
+            fbRef.set(data).catch(console.error); // ย้ายขึ้น Firebase ครั้งเดียว
+            console.log('✅ ย้ายข้อมูลจาก localStorage → Firebase แล้ว');
+          }
+        }
+      }catch(e){}
+    }
     renderAll();
   });
   checkNotifOnLoad();
