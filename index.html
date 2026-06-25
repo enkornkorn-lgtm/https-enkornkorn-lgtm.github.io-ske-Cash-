@@ -41,30 +41,13 @@ body{font-family:'Sarabun',system-ui,sans-serif;background:var(--bg);color:var(-
 .bell-badge{position:absolute;top:-3px;right:-3px;background:var(--red);color:#fff;font-size:9px;font-weight:700;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid var(--navy);}
 
 /* ── stats bar ── */
-.statsbar{background:var(--navy2);display:flex;}
-.sbi{flex:1;padding:20px 10px;text-align:center;border-right:1px solid rgba(255,255,255,.1);min-height:105px;display:flex;flex-direction:column;justify-content:center;}
+.statsbar{background:var(--navy2);display:flex;min-height:132px;}
+.sbi{flex:1;padding:20px 8px;text-align:center;border-right:1px solid rgba(255,255,255,.12);display:flex;flex-direction:column;align-items:center;justify-content:center;}
 .sbi:last-child{border-right:none;}
-.sbi-lbl{
-  font-family:'Sarabun',sans-serif;
-  font-size:18px;
-  color:rgba(255,255,255,.85);
-  margin-bottom:14px;
-  font-weight:500;
-}
-.sbi-val{
-  font-family:'Kanit',sans-serif;
-  font-weight:700;
-  font-size:34px;
-  color:#fff;
-  line-height:1;
-}
+.sbi-lbl{font-family:'Sarabun',sans-serif;font-size:18px;color:rgba(255,255,255,.88);margin-bottom:12px;font-weight:500;line-height:1.1;}
+.sbi-val{font-family:'Kanit',sans-serif;font-weight:700;font-size:33px;color:#fff;line-height:1.05;white-space:nowrap;}
 .sbi-val.g{color:var(--green-light);}
-.sbi-baht{
-  font-family:'Sarabun',sans-serif;
-  color:rgba(255,255,255,.85);
-  font-size:18px;
-  margin-top:12px;
-}
+.sbi-baht{font-family:'Sarabun',sans-serif;color:rgba(255,255,255,.88);font-size:18px;margin-top:10px;line-height:1;}
 
 /* ── alert ── */
 .alert-wrap{padding:12px 14px 0;}
@@ -491,7 +474,7 @@ function renderStatsBar(){
            +data.creditCards.reduce((s,c)=>s+(c.balance>0&&!isPaidThisMo(c)?Math.min(c.minPay||0,c.balance):0),0);
   const paid=[...data.carLoans,...data.creditCards].reduce((s,it)=>s+(it.payments||[]).reduce((a,p)=>a+p.amount,0),0);
   const el=document.getElementById('statsbar');
-  if(el)el.innerHTML=`<div class="sbi"><div class="sbi-lbl">หนี้คงเหลือ</div><div class="sbi-val">${baht(total)}</div></div><div class="sbi"><div class="sbi-lbl">จ่ายเดือนนี้</div><div class="sbi-val">${baht(due)}</div></div><div class="sbi"><div class="sbi-lbl">จ่ายไปแล้ว</div><div class="sbi-val g">${baht(paid)}</div><div class='sbi-baht'>บาท</div></div>`;
+  if(el)el.innerHTML=`<div class="sbi"><div class="sbi-lbl">หนี้คงเหลือ</div><div class="sbi-val">${baht(total)}</div><div class="sbi-baht">บาท</div></div><div class="sbi"><div class="sbi-lbl">จ่ายเดือนนี้</div><div class="sbi-val">${baht(due)}</div><div class="sbi-baht">บาท</div></div><div class="sbi"><div class="sbi-lbl">จ่ายไปแล้ว</div><div class="sbi-val g">${baht(paid)}</div><div class="sbi-baht">บาท</div></div>`;
 }
 
 function renderAlerts(){
@@ -500,7 +483,7 @@ function renderAlerts(){
   if(!ap)return;
   if(!urgent.length){ap.style.display='none';return;}
   ap.style.display='';
-  ap.innerHTML=`<div class="alert-wrap"><div class="alert-box"><div class="alert-hd"><span class="alert-hd-t">⚠️ แจ้งเตือนการชำระ</span><button class="alert-hd-btn" onclick="openNotifModal()">ตั้งค่า</button></div>${urgent.map(u=>`<div class="alert-row a-${u.level==="next"?"next":u.level==="past"?"past":u.level}"><span class="alert-dot">${u.level==='past'?'🟡':u.level==='today'?'🟠':u.level==='next'?'🔵':'🟡'}</span><div class="alert-info"><span class="alert-name">${esc(u.name)}</span><span class="alert-msg">${u.level==='past'?`ยังไม่ชำระเดือนนี้ · กำหนดถัดไป ${u.nextDueFmt}`:u.level==='today'?`ครบกำหนดชำระวันนี้ (${u.nextDueFmt})`:u.level==='next'?`กำหนดถัดไป ${u.nextDueFmt} (อีก ${u.diff} วัน)`:`กำหนดชำระ ${u.nextDueFmt} (อีก ${u.diff} วัน)`}</span></div><span class="alert-amt">${baht(u.amt)}</span></div>`).join('')}</div><div class='sbi-baht'>บาท</div></div>`;
+  ap.innerHTML=`<div class="alert-wrap"><div class="alert-box"><div class="alert-hd"><span class="alert-hd-t">⚠️ แจ้งเตือนการชำระ</span><button class="alert-hd-btn" onclick="openNotifModal()">ตั้งค่า</button></div>${urgent.map(u=>`<div class="alert-row a-${u.level==="next"?"next":u.level==="past"?"past":u.level}"><span class="alert-dot">${u.level==='past'?'🟡':u.level==='today'?'🟠':u.level==='next'?'🔵':'🟡'}</span><div class="alert-info"><span class="alert-name">${esc(u.name)}</span><span class="alert-msg">${u.level==='past'?`ยังไม่ชำระเดือนนี้ · กำหนดถัดไป ${u.nextDueFmt}`:u.level==='today'?`ครบกำหนดชำระวันนี้ (${u.nextDueFmt})`:u.level==='next'?`กำหนดถัดไป ${u.nextDueFmt} (อีก ${u.diff} วัน)`:`กำหนดชำระ ${u.nextDueFmt} (อีก ${u.diff} วัน)`}</span></div><span class="alert-amt">${baht(u.amt)}</span></div>`).join('')}</div></div>`;
 }
 
 function renderCars(){
@@ -603,7 +586,7 @@ function renderHist(id,type){
   if(!pmts.length){el.innerHTML='<div class="hist-wrap"><div class="hist-empty">ยังไม่มีประวัติการชำระ</div></div>';return;}
   el.innerHTML='<div class="hist-wrap"><div class="hist-hdr-row">ประวัติการชำระ</div>'+pmts.map(p=>{
     const src=imgSrc(p)||null;const thumb=src?`<img class="hist-thumb" src="${src}" onclick="openLightboxDirect('${src}')" alt="สลิป">`:'';
-    return `<div class="hist-row"><div class="hist-left"><div class="hist-date">${thDate(p.date)}</div><div class="hist-amt">${baht(p.amount)}</div>${p.note?`<div class="hist-note">${esc(p.note)}</div>`:''}</div><div class="hist-right">${thumb}<button class="hist-del" onclick="deletePayment('${type}','${id}','${p.id}','${p.imgKey||''}')">✕</button></div><div class='sbi-baht'>บาท</div></div>`;
+    return `<div class="hist-row"><div class="hist-left"><div class="hist-date">${thDate(p.date)}</div><div class="hist-amt">${baht(p.amount)}</div>${p.note?`<div class="hist-note">${esc(p.note)}</div>`:''}</div><div class="hist-right">${thumb}<button class="hist-del" onclick="deletePayment('${type}','${id}','${p.id}','${p.imgKey||''}')">✕</button></div></div>`;
   }).join('')+'</div>';
 }
 
@@ -675,7 +658,7 @@ function openPayModal(type,id){
 function renderImgPreview(){
   const el=document.getElementById('img-area-content');if(!el)return;
   if(pendingImg){
-    el.innerHTML=`<div class="img-preview-wrap"><img class="img-preview" src="${pendingImg}" onclick="openLightboxDirect('${pendingImg}')" style="max-height:240px;"><div class="img-actions"><button class="img-remove" onclick="clearImg()">✕ ลบรูป</button><button class="img-change" onclick="pickCamera()">📷 ถ่ายใหม่</button><button class="img-change" onclick="pickGallery()">🖼 เลือกรูป</button></div><div class='sbi-baht'>บาท</div></div>`;
+    el.innerHTML=`<div class="img-preview-wrap"><img class="img-preview" src="${pendingImg}" onclick="openLightboxDirect('${pendingImg}')" style="max-height:240px;"><div class="img-actions"><button class="img-remove" onclick="clearImg()">✕ ลบรูป</button><button class="img-change" onclick="pickCamera()">📷 ถ่ายใหม่</button><button class="img-change" onclick="pickGallery()">🖼 เลือกรูป</button></div></div>`;
   }else{
     el.innerHTML=`<div style="display:flex;gap:8px;margin-top:6px;"><button class="img-pick-btn" onclick="pickCamera()" style="flex:1;padding:18px;border-radius:14px;border:2px dashed #CBD5E1;flex-direction:column;"><span style="font-size:28px;">📷</span><span style="font-size:13px;font-weight:600;color:#475569;margin-top:4px;">ถ่ายรูป</span></button><button class="img-pick-btn" onclick="pickGallery()" style="flex:1;padding:18px;border-radius:14px;border:2px dashed #CBD5E1;flex-direction:column;"><span style="font-size:28px;">🖼</span><span style="font-size:13px;font-weight:600;color:#475569;margin-top:4px;">คลังรูป</span></button></div>`;
   }
