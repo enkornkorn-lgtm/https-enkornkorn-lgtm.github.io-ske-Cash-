@@ -35,6 +35,8 @@ body{font-family:'Sarabun',system-ui,sans-serif;background:var(--bg);color:var(-
 .topbar-text{flex:1;}
 .topbar-title{font-family:'Kanit';font-weight:700;font-size:19px;color:#fff;line-height:1.2;}
 .topbar-sub{font-size:11px;color:rgba(255,255,255,.55);margin-top:1px;}
+.share-btn{position:relative;flex:none;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.25);border-radius:50%;width:40px;height:40px;font-size:18px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-right:4px;}
+.share-btn:active{background:rgba(255,255,255,.2);}
 .topbar-bell{position:relative;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none;}
 .bell-badge{position:absolute;top:-3px;right:-3px;background:var(--red);color:#fff;font-size:9px;font-weight:700;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid var(--navy);}
 
@@ -191,6 +193,8 @@ body{font-family:'Sarabun',system-ui,sans-serif;background:var(--bg);color:var(-
 @media(min-width:560px){.overlay{justify-content:center;padding:18px;}.sheet{border-radius:18px;max-height:80vh;}}
 @media(prefers-reduced-motion:reduce){.seal-anim{animation:none;display:none;}.prog-fill{transition:none;}}
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 </head>
 <body>
 <div id="app">
@@ -200,7 +204,7 @@ body{font-family:'Sarabun',system-ui,sans-serif;background:var(--bg);color:var(-
       <div class="topbar-title">สมุดบันทึกหนี้</div>
       <div class="topbar-sub">ค่างวดรถ · บัตรเครดิต</div>
     </div>
-    <button class="topbar-bell" id="bell-btn" onclick="openNotifModal()">🔕</button>
+    <button class="share-btn" onclick="shareData()" title="ส่งข้อมูลไปมือถือ">📱</button><button class="topbar-bell" id="bell-btn" onclick="openNotifModal()">🔕</button>
   </header>
   <div id="statsbar" class="statsbar"></div>
   <div id="alert-panel" style="display:none;"></div>
@@ -218,7 +222,7 @@ body{font-family:'Sarabun',system-ui,sans-serif;background:var(--bg);color:var(-
     </div>
     <div id="card-list"></div>
   </div>
-  <div class="foot">บันทึกในเครื่อง · ใช้งานออฟไลน์ได้</div>
+  <div class="foot">ซิงก์ผ่าน Firebase · ใช้งานได้ทุกอุปกรณ์</div>
 </div>
 
 <div class="overlay" id="overlay" onclick="overlayClick(event)">
@@ -228,9 +232,37 @@ body{font-family:'Sarabun',system-ui,sans-serif;background:var(--bg);color:var(-
   <img class="lightbox-img" id="lightbox-img" alt="สลิป">
   <button class="lightbox-close" onclick="closeLightbox()">✕</button>
 </div>
-<input type="file" id="file-input" accept="image/*" style="display:none" onchange="onFilePick(event)">
+<input type="file" id="file-cam"     accept="image/*" capture="environment" style="display:none" onchange="onFilePick(event)">
+<input type="file" id="file-gallery" accept="image/*"                   style="display:none" onchange="onFilePick(event)">
 
 <script>
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  🔥 FIREBASE CONFIG — กรอกค่าจาก Firebase Console        ║
+// ║  1) ไปที่ console.firebase.google.com → สร้าง Project     ║
+// ║  2) Add Web App → คัดลอก firebaseConfig                  ║
+// ║  3) เปิด Realtime Database & Storage (test mode)         ║
+// ║  4) แทนที่ค่าด้านล่าง แล้วอัปโหลด index.html ขึ้น GitHub ║
+// ╚══════════════════════════════════════════════════════════╝
+const FB = {
+  apiKey:            "AIzaSyBENr1XCv7LDs77y9FXLsFgFR4GAUjUUGo",
+  authDomain:        "ske-cash.firebaseapp.com",
+  databaseURL:       "https://ske-cash-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:         "ske-cash",
+  storageBucket:     "ske-cash.firebasestorage.app",
+  messagingSenderId: "622011181772",
+  appId:             "1:622011181772:web:bf01b089e83dca7684b069"
+};
+const FB_OK = !FB.apiKey.startsWith("YOUR");
+let fbDb=null, fbSt=null, fbRef=null;
+if(FB_OK){
+  try{
+    firebase.initializeApp(FB);
+    fbDb = firebase.database();
+    fbRef = fbDb.ref('debtData');
+  }catch(e){console.error('Firebase init:',e);}
+}
+
 const baht=n=>'฿'+Number(n||0).toLocaleString('th-TH',{maximumFractionDigits:0});
 const ymOf=d=>`${d.getFullYear()}-${d.getMonth()+1}`;
 const todayYM=()=>ymOf(new Date());
@@ -251,7 +283,13 @@ function loadAll(){
   try{const n=localStorage.getItem(NKEY);if(n)notifPrefs={...notifPrefs,...JSON.parse(n)};}catch(e){}
   warnDraft=notifPrefs.warnDays||3;
 }
-function saveData(){try{localStorage.setItem(DKEY,JSON.stringify(data));}catch(e){alert('พื้นที่เก็บข้อมูลเต็ม');}}
+function saveData(){
+  if(FB_OK&&fbRef){
+    fbRef.set(data).catch(e=>console.error('Save err:',e));
+  }else{
+    try{localStorage.setItem(DKEY,JSON.stringify(data));}catch(e){alert('พื้นที่เก็บข้อมูลเต็ม');}
+  }
+}
 function saveNotif(){try{localStorage.setItem(NKEY,JSON.stringify(notifPrefs));}catch(e){}}
 function saveImg(k,b){try{localStorage.setItem(k,b);return true;}catch(e){return false;}}
 function delImg(k){if(!k)return;try{localStorage.removeItem(k);}catch(e){}delete imgCache[k];}
@@ -485,7 +523,7 @@ function renderHist(id,type){
   const pmts=item?.payments||[];
   if(!pmts.length){el.innerHTML='<div class="hist-wrap"><div class="hist-empty">ยังไม่มีประวัติการชำระ</div></div>';return;}
   el.innerHTML='<div class="hist-wrap"><div class="hist-hdr-row">ประวัติการชำระ</div>'+pmts.map(p=>{
-    const thumb=p.imgKey&&imgCache[p.imgKey]?`<img class="hist-thumb" src="${imgCache[p.imgKey]}" onclick="openLightbox('${p.imgKey}')" alt="สลิป">`:p.imgKey?'<div class="hist-thumb-ph">📷</div>':'';
+    const src=imgSrc(p)||null;const thumb=src?`<img class="hist-thumb" src="${src}" onclick="openLightboxDirect('${src}')" alt="สลิป">`:'';
     return `<div class="hist-row"><div class="hist-left"><div class="hist-date">${thDate(p.date)}</div><div class="hist-amt">${baht(p.amount)}</div>${p.note?`<div class="hist-note">${esc(p.note)}</div>`:''}</div><div class="hist-right">${thumb}<button class="hist-del" onclick="deletePayment('${type}','${id}','${p.id}','${p.imgKey||''}')">✕</button></div></div>`;
   }).join('')+'</div>';
 }
@@ -557,10 +595,15 @@ function openPayModal(type,id){
 
 function renderImgPreview(){
   const el=document.getElementById('img-area-content');if(!el)return;
-  if(pendingImg){el.innerHTML=`<div class="img-preview-wrap"><img class="img-preview" src="${pendingImg}" onclick="openLightboxDirect('${pendingImg}')" style="max-height:240px;"><div class="img-actions"><button class="img-remove" onclick="clearImg()">✕ ลบรูป</button><button class="img-change" onclick="pickImage()">เปลี่ยนรูป</button></div></div>`;}
-  else{el.innerHTML=`<button class="img-pick-btn" onclick="pickImage()" style="padding:22px;border-radius:14px;border:2px dashed #CBD5E1;"><span style="font-size:30px;display:block;margin-bottom:6px;">📷</span><span style="font-size:14px;font-weight:600;color:#475569;">ถ่ายสลิป / เลือกรูปจากคลัง</span></button>`;}
+  if(pendingImg){
+    el.innerHTML=`<div class="img-preview-wrap"><img class="img-preview" src="${pendingImg}" onclick="openLightboxDirect('${pendingImg}')" style="max-height:240px;"><div class="img-actions"><button class="img-remove" onclick="clearImg()">✕ ลบรูป</button><button class="img-change" onclick="pickCamera()">📷 ถ่ายใหม่</button><button class="img-change" onclick="pickGallery()">🖼 เลือกรูป</button></div></div>`;
+  }else{
+    el.innerHTML=`<div style="display:flex;gap:8px;margin-top:6px;"><button class="img-pick-btn" onclick="pickCamera()" style="flex:1;padding:18px;border-radius:14px;border:2px dashed #CBD5E1;flex-direction:column;"><span style="font-size:28px;">📷</span><span style="font-size:13px;font-weight:600;color:#475569;margin-top:4px;">ถ่ายรูป</span></button><button class="img-pick-btn" onclick="pickGallery()" style="flex:1;padding:18px;border-radius:14px;border:2px dashed #CBD5E1;flex-direction:column;"><span style="font-size:28px;">🖼</span><span style="font-size:13px;font-weight:600;color:#475569;margin-top:4px;">คลังรูป</span></button></div>`;
+  }
 }
-function pickImage(){document.getElementById('file-input').click();}
+function pickCamera(){document.getElementById('file-cam').click();}
+function pickGallery(){document.getElementById('file-gallery').click();}
+function pickImage(){pickGallery();}
 function clearImg(){pendingImg=null;renderImgPreview();}
 async function onFilePick(e){
   const file=e.target.files?.[0];if(!file)return;
@@ -569,10 +612,19 @@ async function onFilePick(e){
   try{pendingImg=await compressImage(file);}catch(err){pendingImg=null;}
   renderImgPreview();e.target.value='';
 }
+
+// ── Image sync via Realtime Database (ไม่ต้องใช้ Storage) ──
+function uploadImg(base64){
+  // เก็บ base64 ไว้ใน payment record → sync ผ่าน RTDB อัตโนมัติ
+  return base64;
+}
+async function deleteImgCloud(url){ /* ลบพร้อม payment record เลย */ }
+function imgSrc(p){ return p.imgUrl||null; }
+
 function compressImage(file){
   return new Promise((resolve,reject)=>{
     const reader=new FileReader();reader.onerror=reject;
-    reader.onload=ev=>{const img=new Image();img.onerror=reject;img.onload=()=>{const MAX=960;let w=img.width,h=img.height;if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);resolve(c.toDataURL('image/jpeg',0.7));};img.src=ev.target.result;};
+    reader.onload=ev=>{const img=new Image();img.onerror=reject;img.onload=()=>{const MAX=960;let w=img.width,h=img.height;if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);resolve(c.toDataURL('image/jpeg',0.45));};img.src=ev.target.result;};
     reader.readAsDataURL(file);
   });
 }
@@ -583,7 +635,12 @@ function recordPayment(){
   const key=type==='car'?'carLoans':'creditCards';
   const idx=data[key].findIndex(x=>x.id===modalItemId);if(idx===-1){closeModal();return;}
   const pmt={id:uid(),date:todayISO(),amount:amt,note,imgKey:null};
-  if(pendingImg){pmt.imgKey='debt-img:'+pmt.id;const ok=saveImg(pmt.imgKey,pendingImg);if(ok)imgCache[pmt.imgKey]=pendingImg;else pmt.imgKey=null;}
+  if(pendingImg){
+    const btn=document.getElementById('pay-btn');
+    if(btn){btn.disabled=true;btn.textContent='⏳ กำลังอัปโหลด...';}
+    pmt.imgUrl = uploadImg(pendingImg);
+    pendingImgFile = null;
+  }
   const item=data[key][idx];
   const newPmts=[pmt,...(item.payments||[])];
   if(type==='car'){data[key][idx]={...item,paid:Math.min(item.total,item.paid+1),lastPaid:pmt.date,payments:newPmts};}
@@ -596,7 +653,7 @@ function recordPayment(){
 }
 function deletePayment(type,itemId,pmtId,imgKey){
   if(!confirm('ลบรายการนี้?'))return;
-  delImg(imgKey||null);
+  deleteImgCloud(imgKey||null);
   const key=type==='car'?'carLoans':'creditCards';
   const idx=data[key].findIndex(x=>x.id===itemId);if(idx===-1)return;
   const item=data[key][idx];
@@ -610,7 +667,7 @@ function removeItem(type,id){
   if(!confirm('ลบรายการนี้ทั้งหมด รวมประวัติการชำระ?'))return;
   const key=type==='car'?'carLoans':'creditCards';
   const item=data[key].find(x=>x.id===id);
-  (item?.payments||[]).forEach(p=>delImg(p.imgKey));
+  (item?.payments||[]).forEach(p=>deleteImgCloud(p.imgUrl||null));
   data[key]=data[key].filter(x=>x.id!==id);histOpen.delete(id);
   saveData();renderAll();
 }
@@ -646,6 +703,75 @@ function checkNotifOnLoad(){
   try{new Notification(title,{body,icon:'icon-192.png'});}catch(e){}
   notifPrefs.lastNotifDate=todayISO();saveNotif();
 }
+// ──── ส่งข้อมูลข้ามอุปกรณ์ ────
+function encodeData(){
+  const exp={
+    carLoans:data.carLoans.map(c=>({...c,payments:(c.payments||[]).map(p=>({...p,imgKey:null}))})),
+    creditCards:data.creditCards.map(c=>({...c,payments:(c.payments||[]).map(p=>({...p,imgKey:null}))})),
+  };
+  try{return btoa(unescape(encodeURIComponent(JSON.stringify(exp))));}
+  catch(e){return null;}
+}
+function decodeData(b64){
+  try{return JSON.parse(decodeURIComponent(escape(atob(b64))));}
+  catch(e){return null;}
+}
+function getShareUrl(){
+  const b64=encodeData();
+  if(!b64)return null;
+  const base=location.href.split('?')[0].split('#')[0];
+  return base+'?d='+b64;
+}
+async function shareData(){
+  const url=getShareUrl();
+  if(!url){alert('ไม่สามารถสร้างลิงก์ได้');return;}
+  // Web Share API (Android Chrome, iOS Safari)
+  if(navigator.share){
+    try{await navigator.share({title:'สมุดบันทึกหนี้ - ข้อมูลของฉัน',url});return;}
+    catch(e){if(e.name==='AbortError')return;}
+  }
+  // Fallback: show modal with copy button
+  openShareModal(url);
+}
+function openShareModal(url){
+  openOverlay(`<div class="sheet-grip"></div>
+    <h3 class="sh-title">📱 ส่งข้อมูลไปมือถือ</h3>
+    <p class="sh-sub">คัดลอกลิงก์นี้ แล้วเปิดบนมือถือ — ข้อมูลจะถูกนำเข้าอัตโนมัติ</p>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <input class="field-inp" id="share-url" value="${url}" readonly style="font-size:11px;color:var(--muted);cursor:pointer;" onclick="this.select()">
+      <button class="btn-pay" style="white-space:nowrap;padding:0 18px;" onclick="doCopy()">📋 คัดลอก</button>
+    </div>
+    <div id="copy-ok" style="display:none;text-align:center;color:var(--green);font-weight:700;padding:8px;">✅ คัดลอกแล้ว! นำไปวางใน Chrome มือถือ</div>
+    <div class="notif-info">⚠️ รูปภาพสลิปจะไม่ถูกส่ง เนื่องจากขนาดไฟล์ใหญ่เกินไป<br>ข้อมูลอื่นทั้งหมดจะไปครบ</div>
+    <div class="sh-actions"><button class="btn-sm" onclick="closeModal()">ปิด</button></div>`);
+}
+function doCopy(){
+  const el=document.getElementById('share-url');
+  const ok=document.getElementById('copy-ok');
+  if(!el)return;
+  navigator.clipboard?.writeText(el.value)
+    .then(()=>{if(ok)ok.style.display='block';})
+    .catch(()=>{el.select();try{document.execCommand('copy');if(ok)ok.style.display='block';}catch(e){alert(el.value);}});
+}
+function importFromUrl(){
+  try{
+    const p=new URLSearchParams(location.search);
+    const d=p.get('d');
+    if(!d)return false;
+    const imp=decodeData(d);
+    if(!imp)return false;
+    if(confirm('🔄 พบข้อมูลที่ส่งมาจากอุปกรณ์อื่น\nต้องการนำเข้าหรือไม่? (ข้อมูลปัจจุบันจะถูกแทนที่)')){
+      data={carLoans:imp.carLoans||[],creditCards:imp.creditCards||[]};
+      saveData();
+      history.replaceState({},'',location.pathname);
+      alert('✅ นำเข้าข้อมูลเรียบร้อยแล้ว!');
+      return true;
+    }
+    history.replaceState({},'',location.pathname);
+  }catch(e){console.error(e);}
+  return false;
+}
+
 const FINANCE_COS=[
   'ASK',
   'ราชธานี',
@@ -655,7 +781,22 @@ const FINANCE_COS=[
   'BENZ',
   'BMW',
 ];
-loadAll();renderAll();checkNotifOnLoad();
+// โหลด notif settings จาก localStorage
+try{const n=localStorage.getItem(NKEY);if(n)notifPrefs={...notifPrefs,...JSON.parse(n)};}catch(e){}
+warnDraft=notifPrefs.warnDays||3;
+
+if(FB_OK&&fbRef){
+  // 🔥 Real-time sync — อัปเดตอัตโนมัติทุกอุปกรณ์
+  fbRef.on('value',snapshot=>{
+    const val=snapshot.val();
+    if(val){data={carLoans:val.carLoans||[],creditCards:val.creditCards||[]};}
+    renderAll();
+  });
+  checkNotifOnLoad();
+}else{
+  // Fallback: localStorage (ไม่มี Firebase)
+  loadAll();importFromUrl();renderAll();checkNotifOnLoad();
+}
 </script>
 </body>
 </html>
