@@ -285,6 +285,11 @@ function badgeOf(it,done){
   return{cls:'soon',label:`ครบกำหนด วันที่ ${it.dueDay}`};
 }
 
+function fmtEndDate(iso){
+  if(!iso)return'-';
+  try{const d=new Date(iso+'T12:00:00');return d.toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'});}
+  catch(e){return iso;}
+}
 function leasingLogo(co){
   const m={
     'ASK':{bg:'#C8102E',fg:'#fff',txt:'ASK',sub:'#a00'},
@@ -363,11 +368,8 @@ function renderCards(){
 }
 
 function carHTML(c,urgent){
-  const done=c.paid>=c.total;
-  const pct=Math.min(100,Math.round((c.paid/c.total)*100));
-  const totalAmt=c.total*c.monthly;
+  const done=c.contractEndDate?new Date(c.contractEndDate+'T23:59:59')<new Date():false;
   const paidAmt=c.paid*c.monthly;
-  const remainAmt=Math.max(0,c.total-c.paid)*c.monthly;
   const bd=badgeOf(c,done);
   const urg=urgent.find(u=>u.id===c.id);
   const isOpen=histOpen.has(c.id);
@@ -383,14 +385,11 @@ function carHTML(c,urgent){
     </div>
     <span class="dk-badge ${bd.cls}">${bd.label}</span>
   </div>
-  <div class="dk-prog">
-    <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
-    <div class="prog-label"><span>${c.paid} / ${c.total} งวด</span><span class="prog-pct">${pct}%</span></div>
-  </div>
+
   <div class="dk-amounts">
-    <div class="dk-row"><span class="dk-row-lbl">ยอดทั้งหมด</span><span class="dk-row-val">${baht(totalAmt)}</span></div>
-    <div class="dk-row"><span class="dk-row-lbl">ชำระแล้ว</span><span class="dk-row-val green">${baht(paidAmt)}</span></div>
-    <div class="dk-row"><span class="dk-row-lbl">คงเหลือ</span><span class="dk-row-val big">${baht(remainAmt)}</span></div>
+    <div class="dk-row"><span class="dk-row-lbl">ยอดชำระสะสม</span><span class="dk-row-val green">${baht(paidAmt)}</span></div>
+    <div class="dk-row"><span class="dk-row-lbl">งวดที่ชำระแล้ว</span><span class="dk-row-val big">${c.paid} งวด</span></div>
+    ${c.contractEndDate?`<div class="dk-row"><span class="dk-row-lbl">วันสิ้นสุดสัญญา</span><span class="dk-row-val" style="font-size:14px;">${fmtEndDate(c.contractEndDate)}</span></div>`:''}
   </div>
   <div class="dk-due">
     <span class="dk-due-lbl">ค่างวด / งวด</span>
@@ -491,7 +490,7 @@ function openEditModal(type,id){
 }
 function addEditFields(type,item,dueDay){
   if(type==='car'){
-    return `<label class="field"><span class="field-lbl">บริษัทไฟแนนซ์</span><select class="field-sel" id="f-finance"><option value="">-- เลือกบริษัทไฟแนนซ์ --</option>${FINANCE_COS.map(c=>`<option value="${c}"${item?.financeCompany===c?' selected':''}>${c}</option>`).join('')}</select></label><label class="field"><span class="field-lbl">ชื่อรถ / ทะเบียน</span><input class="field-inp" id="f-name" value="${esc(item?.name||'')}" placeholder="เช่น ISUZU 73-1896 นครปฐม"></label><label class="field"><span class="field-lbl">ค่างวด / งวด (บาท)</span><input class="field-inp" id="f-monthly" inputmode="numeric" value="${item?.monthly||''}"></label><div class="grid2"><label class="field"><span class="field-lbl">จำนวนงวดทั้งหมด</span><input class="field-inp" id="f-total" inputmode="numeric" value="${item?.total||''}"></label><label class="field"><span class="field-lbl">งวด</span><input class="field-inp" id="f-paid" inputmode="numeric" value="${item?.paid||0}"></label></div><label class="field"><span class="field-lbl">วันครบกำหนด (วันที่)</span><input class="field-inp" id="f-dueday" inputmode="numeric" value="${dueDay||5}"></label>`;
+    return `<label class="field"><span class="field-lbl">บริษัทไฟแนนซ์</span><select class="field-sel" id="f-finance"><option value="">-- เลือกบริษัทไฟแนนซ์ --</option>${FINANCE_COS.map(c=>`<option value="${c}"${item?.financeCompany===c?' selected':''}>${c}</option>`).join('')}</select></label><label class="field"><span class="field-lbl">ชื่อรถ / ทะเบียน</span><input class="field-inp" id="f-name" value="${esc(item?.name||'')}" placeholder="เช่น ISUZU 73-1896 นครปฐม"></label><label class="field"><span class="field-lbl">ค่างวด / งวด (บาท)</span><input class="field-inp" id="f-monthly" inputmode="numeric" value="${item?.monthly||''}"></label><label class="field"><span class="field-lbl">งวด (ชำระไปแล้ว)</span><input class="field-inp" id="f-paid" inputmode="numeric" value="${item?.paid||0}"></label><div class="grid2"><label class="field"><span class="field-lbl">วันครบกำหนดชำระ (วันที่)</span><input class="field-inp" id="f-dueday" inputmode="numeric" value="${dueDay||5}" placeholder="เช่น 5"></label><label class="field"><span class="field-lbl">วันสิ้นสุดสัญญา</span><input class="field-inp" id="f-enddate" type="date" value="${item?.contractEndDate||''}"></label></div>`;
   }else{
     return `<label class="field"><span class="field-lbl">ชื่อบัตร / ธนาคาร</span><input class="field-inp" id="f-name" value="${esc(item?.name||'')}" placeholder="เช่น KBank Visa Platinum"></label><div class="grid2"><label class="field"><span class="field-lbl">ยอดชำระ (บาท)</span><input class="field-inp" id="f-minpay" inputmode="numeric" value="${item?.minPay||''}"></label><label class="field"><span class="field-lbl">วันครบกำหนด</span><input class="field-inp" id="f-dueday" inputmode="numeric" value="${dueDay||25}"></label></div>`;
   }
@@ -501,7 +500,7 @@ function saveAddEdit(){
   const name=document.getElementById('f-name')?.value.trim()||'';
   const dueDay=Math.min(31,Math.max(1,num(document.getElementById('f-dueday')?.value)||1));
   if(type==='car'){
-    const financeCompany=document.getElementById('f-finance')?.value||'';const item={name:name||'ค่างวดรถ',financeCompany,monthly:num(document.getElementById('f-monthly')?.value),total:Math.max(1,Math.round(num(document.getElementById('f-total')?.value))),paid:Math.max(0,Math.round(num(document.getElementById('f-paid')?.value))),dueDay};
+    const financeCompany=document.getElementById('f-finance')?.value||'';const contractEndDate=document.getElementById('f-enddate')?.value||'';const item={name:name||'ค่างวดรถ',financeCompany,monthly:num(document.getElementById('f-monthly')?.value),total:9999,paid:Math.max(0,Math.round(num(document.getElementById('f-paid')?.value))),dueDay,contractEndDate};
     if(modalMode.startsWith('edit')){data.carLoans=data.carLoans.map(c=>c.id===modalItemId?{...c,...item}:c);}
     else{data.carLoans.push({id:uid(),payments:[],...item});}
   }else{
