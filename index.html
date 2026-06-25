@@ -60,6 +60,7 @@ body{font-family:'Sarabun',system-ui,sans-serif;background:var(--bg);color:var(-
 .a-today{background:rgba(234,88,12,.04);}
 .a-soon{background:rgba(217,119,6,.04);}
 .a-next{background:rgba(37,99,235,.04);border-left:4px solid #2563EB;}
+.a-past{background:rgba(217,119,6,.06);border-left:4px solid #D97706;}
 .alert-dot{font-size:14px;flex:none;}
 .alert-info{flex:1;min-width:0;}
 .alert-name{display:block;font-weight:700;font-size:14px;}
@@ -297,10 +298,9 @@ function loadImgsFor(pmts){(pmts||[]).forEach(p=>{if(p.imgKey&&!imgCache[p.imgKe
 
 function calcUrgent(){
   const now=new Date(),todayD=now.getDate();
-  const THM=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const THM=TH_MONTHS_S;
   const isPaid=it=>it.lastPaid&&ymOf(new Date(it.lastPaid))===todayYM();
   const items=[];
-  // คำนวณวันถัดไป (เดือนนี้ถ้ายังไม่ถึง, เดือนหน้าถ้าผ่านไปแล้ว)
   const nextOcc=(dueDay)=>{
     let y=now.getFullYear(),m=now.getMonth();
     if(todayD>dueDay){m++;if(m>11){m=0;y++;}}
@@ -309,34 +309,31 @@ function calcUrgent(){
   const check=(it,type)=>{
     const done=type==='car'?(it.contractEndDate?parseThDate(it.contractEndDate)<now:false):it.balance<=0;
     if(done)return;
+    const amt=type==='car'?it.monthly:Math.min(it.minPay||0,it.balance||0);
     const nd=nextOcc(it.dueDay);
     const diffDays=Math.round((nd.date-now)/(1000*60*60*24));
-    const amt=type==='car'?it.monthly:Math.min(it.minPay||0,it.balance||0);
     const nextDueFmt=nd.fmt;
     if(isPaid(it)){
-      // จ่ายแล้วเดือนนี้ → แสดงกำหนดถัดไปถ้าใกล้แล้ว
-      if(diffDays<=notifPrefs.warnDays)
-        items.push({id:it.id,name:it.name,type,level:'next',diff:diffDays,dueDay:it.dueDay,amt,nextDueFmt});
+      // จ่ายเดือนนี้แล้ว ไม่ต้องแจ้งเตือน
       return;
     }
-    // ยังไม่ได้จ่าย
-    let level,dd;
-    if(todayD>it.dueDay){level='overdue';dd=todayD-it.dueDay;}
-    else if(todayD===it.dueDay){level='today';dd=0;}
-    else if(it.dueDay-todayD<=notifPrefs.warnDays){level='soon';dd=it.dueDay-todayD;}
-    else return;
-    items.push({id:it.id,name:it.name,type,level,diff:dd,dueDay:it.dueDay,amt,nextDueFmt});
+
+    // แจ้งเตือนเฉพาะภายในจำนวนวันที่กำหนด
+    if(diffDays<=notifPrefs.warnDays){
+      let level=(diffDays===0)?'today':'soon';
+      items.push({id:it.id,name:it.name,type,level,diff:diffDays,dueDay:it.dueDay,amt,nextDueFmt});
+    }
   };
   data.carLoans.forEach(c=>check(c,'car'));
   data.creditCards.forEach(c=>check(c,'card'));
-  const p={overdue:0,today:1,soon:2,next:3};
+  const p={past:0,today:1,soon:2,next:3};
   return items.sort((a,b)=>p[a.level]-p[b.level]||a.diff-b.diff);
 }
 function isPaidThisMo(it){return it.lastPaid&&ymOf(new Date(it.lastPaid))===todayYM();}
 function badgeOf(it,done){
   if(done)return{cls:'ok',label:'ชำระครบแล้ว'};
   if(isPaidThisMo(it))return{cls:'ok',label:'ชำระแล้วเดือนนี้'};
-  if(new Date().getDate()>it.dueDay)return{cls:'late',label:`เกินกำหนด วันที่ ${it.dueDay}`};
+  if(new Date().getDate()>it.dueDay)return{cls:'soon',label:`กำหนดถัดไป วันที่ ${it.dueDay}`};
   return{cls:'soon',label:`ครบกำหนด วันที่ ${it.dueDay}`};
 }
 
@@ -421,7 +418,7 @@ function renderAlerts(){
   if(!ap)return;
   if(!urgent.length){ap.style.display='none';return;}
   ap.style.display='';
-  ap.innerHTML=`<div class="alert-wrap"><div class="alert-box"><div class="alert-hd"><span class="alert-hd-t">⚠️ แจ้งเตือนการชำระ</span><button class="alert-hd-btn" onclick="openNotifModal()">ตั้งค่า</button></div>${urgent.map(u=>`<div class="alert-row a-${u.level==="next"?"next":u.level}"><span class="alert-dot">${u.level==='overdue'?'🔴':u.level==='today'?'🟠':u.level==='next'?'🔵':'🟡'}</span><div class="alert-info"><span class="alert-name">${esc(u.name)}</span><span class="alert-msg">${u.level==='overdue'?`เกินกำหนด ${u.diff} วัน · กำหนด ${u.nextDueFmt}`:u.level==='today'?`ครบกำหนดชำระวันนี้ (${u.nextDueFmt})`:u.level==='next'?`กำหนดถัดไป ${u.nextDueFmt} (อีก ${u.diff} วัน)`:`กำหนดชำระ ${u.nextDueFmt} (อีก ${u.diff} วัน)`}</span></div><span class="alert-amt">${baht(u.amt)}</span></div>`).join('')}</div></div>`;
+  ap.innerHTML=`<div class="alert-wrap"><div class="alert-box"><div class="alert-hd"><span class="alert-hd-t">⚠️ แจ้งเตือนการชำระ</span><button class="alert-hd-btn" onclick="openNotifModal()">ตั้งค่า</button></div>${urgent.map(u=>`<div class="alert-row a-${u.level==="next"?"next":u.level==="past"?"past":u.level}"><span class="alert-dot">${u.level==='past'?'🟡':u.level==='today'?'🟠':u.level==='next'?'🔵':'🟡'}</span><div class="alert-info"><span class="alert-name">${esc(u.name)}</span><span class="alert-msg">${u.level==='past'?`ยังไม่ชำระเดือนนี้ · กำหนดถัดไป ${u.nextDueFmt}`:u.level==='today'?`ครบกำหนดชำระวันนี้ (${u.nextDueFmt})`:u.level==='next'?`กำหนดถัดไป ${u.nextDueFmt} (อีก ${u.diff} วัน)`:`กำหนดชำระ ${u.nextDueFmt} (อีก ${u.diff} วัน)`}</span></div><span class="alert-amt">${baht(u.amt)}</span></div>`).join('')}</div></div>`;
 }
 
 function renderCars(){
@@ -680,14 +677,14 @@ function openNotifModal(){
   const on=notifPrefs.browserEnabled&&typeof Notification!=='undefined'&&Notification.permission==='granted';
   const perm=typeof Notification!=='undefined'?Notification.permission:'unsupported';
   const sub=perm==='denied'?'⛔ ถูกบล็อก':perm==='unsupported'?'ไม่รองรับ':on?'✅ เปิดใช้งาน':'แจ้งเตือนเมื่อเปิดแอปในวันครบกำหนด';
-  openOverlay(`<div class="sheet-grip"></div><h3 class="sh-title">🔔 ตั้งค่าการแจ้งเตือน</h3><div class="ntoggle-row"><div><div class="ntoggle-lbl">แจ้งเตือนทางเบราว์เซอร์</div><div class="ntoggle-sub">${sub}</div></div>${perm!=='denied'&&perm!=='unsupported'?`<button class="ntoggle-btn${on?' on':''}" id="ntbtn" onclick="toggleBrowserNotif()">${on?'เปิด':'ปิด'}</button>`:''}</div><div class="field" style="margin-top:18px"><span class="field-lbl">แจ้งเตือนล่วงหน้ากี่วัน</span><div class="warnday-row" id="warnday-row">${renderWarnChips()}</div></div><div class="notif-info">💡 แจ้งเตือนจะปรากฏเมื่อเปิดแอปในวันที่ครบกำหนด</div><div class="sh-actions"><button class="btn-sm" onclick="closeModal()">ปิด</button><button class="btn-pay" onclick="saveNotifSettings()">บันทึก</button></div>`);
+  openOverlay(`<div class="sheet-grip"></div><h3 class="sh-title">🔔 ตั้งค่าการแจ้งเตือน</h3><div class="ntoggle-row"><div><div class="ntoggle-lbl">แจ้งเตือนทางเบราว์เซอร์</div><div class="ntoggle-sub">${sub}</div></div>${perm!=='denied'&&perm!=='unsupported'?`<button class="ntoggle-btn${on?' on':''}" id="ntbtn" onclick="toggleBrowserNotif()">${on?'เปิด':'ปิด'}</button>`:''}</div><div class="field" style="margin-top:18px"><span class="field-lbl">แจ้งเตือนล่วงหน้ากี่วัน</span><div class="warnday-row" id="warnday-row">${renderWarnChips()}</div></div><div class="notif-info">💡 แจ้งเตือนจะปรากฏเมื่อเปิดแอปในช่วงวันที่กำหนดไว้</div><div class="sh-actions"><button class="btn-sm" onclick="closeModal()">ปิด</button><button class="btn-pay" onclick="saveNotifSettings()">บันทึก</button></div>`);
 }
 function renderWarnChips(){return [1,2,3,5,7].map(d=>`<button class="warnday-chip${warnDraft===d?' sel':''}" onclick="selWarn(${d})">${d} วัน</button>`).join('');}
 function selWarn(d){warnDraft=d;const el=document.getElementById('warnday-row');if(el)el.innerHTML=renderWarnChips();}
 async function toggleBrowserNotif(){
   if(!notifPrefs.browserEnabled){
     if(typeof Notification==='undefined')return;
-    if(Notification.permission==='default'){const p=await Notification.requestPermission();if(p==='granted'){notifPrefs.browserEnabled=true;saveNotif();try{new Notification('✅ เปิดการแจ้งเตือนแล้ว',{body:'จะแจ้งเตือนเมื่อครบกำหนดชำระ'});}catch(e){}}}
+    if(Notification.permission==='default'){const p=await Notification.requestPermission();if(p==='granted'){notifPrefs.browserEnabled=true;saveNotif();try{new Notification('✅ เปิดการแจ้งเตือนแล้ว',{body:'จะแจ้งเตือนตามจำนวนวันที่ตั้งค่าไว้'});}catch(e){}}}
     else if(Notification.permission==='granted'){notifPrefs.browserEnabled=true;saveNotif();}
   }else{notifPrefs.browserEnabled=false;saveNotif();}
   renderBell();const btn=document.getElementById('ntbtn');if(btn){const on=notifPrefs.browserEnabled&&Notification.permission==='granted';btn.className='ntoggle-btn'+(on?' on':'');btn.textContent=on?'เปิด':'ปิด';}
@@ -697,9 +694,9 @@ function checkNotifOnLoad(){
   if(!notifPrefs.browserEnabled||typeof Notification==='undefined'||Notification.permission!=='granted')return;
   if(notifPrefs.lastNotifDate===todayISO())return;
   const urgent=calcUrgent();if(!urgent.length)return;
-  const overdue=urgent.filter(u=>u.level==='overdue');
-  const title=overdue.length?`⚠️ มี ${overdue.length} รายการเกินกำหนด`:`🔔 ใกล้ถึงกำหนดชำระ ${urgent.length} รายการ`;
-  const body=urgent.map(u=>u.level==='overdue'?`${u.name} เกินกำหนด ${u.diff} วัน`:u.level==='today'?`${u.name} ครบกำหนดวันนี้`:`${u.name} อีก ${u.diff} วัน`).join('\n');
+  const overdue=[];
+  const title=`🔔 ใกล้ถึงกำหนดชำระ ${urgent.length} รายการ`;
+  const body=urgent.map(u=>u.level==='today'?`${u.name} ครบกำหนดวันนี้`:`${u.name} อีก ${u.diff} วัน`).join('\n');
   try{new Notification(title,{body,icon:'icon-192.png'});}catch(e){}
   notifPrefs.lastNotifDate=todayISO();saveNotif();
 }
