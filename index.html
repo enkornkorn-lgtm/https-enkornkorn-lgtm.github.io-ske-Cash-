@@ -353,7 +353,13 @@ function calcUrgent(){
   const p={past:0,today:1,soon:2,next:3};
   return items.sort((a,b)=>p[a.level]-p[b.level]||a.diff-b.diff);
 }
-function isPaidThisMo(it){return it.lastPaid&&ymOf(new Date(it.lastPaid))===todayYM();}
+function isPaidThisMo(it){
+  if(!it.lastPaid || ymOf(new Date(it.lastPaid))!==todayYM()) return false;
+  const pmts=it.payments||[];
+  const latest=pmts[0]||{};
+  // ถือว่าชำระสมบูรณ์เมื่อมีการแนบสลิป/รูปประกอบด้วย
+  return !!(latest.image || latest.imageData || latest.slip || latest.photo || latest.file);
+}
 function badgeOf(it,done){
   if(done)return{cls:'ok',label:'ชำระครบแล้ว'};
   if(isPaidThisMo(it))return{cls:'ok',label:'ชำระแล้วเดือนนี้'};
