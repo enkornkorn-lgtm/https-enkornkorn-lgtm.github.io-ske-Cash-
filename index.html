@@ -323,29 +323,51 @@ function loadImgsFor(pmts){(pmts||[]).forEach(p=>{if(p.imgKey&&!imgCache[p.imgKe
 function calcUrgent(){
   const now=new Date(),todayD=now.getDate();
   const THM=TH_MONTHS_S;
-  const isPaid=it=>it.lastPaid&&ymOf(new Date(it.lastPaid))===todayYM();
   const items=[];
+
+  const dueThisMonth=(dueDay)=>{
+    const y=now.getFullYear(),m=now.getMonth();
+    return {y,m,d:dueDay,date:new Date(y,m,dueDay),fmt:`${dueDay} ${THM[m]} ${y+543}`};
+  };
+
   const nextOcc=(dueDay)=>{
     let y=now.getFullYear(),m=now.getMonth();
     if(todayD>dueDay){m++;if(m>11){m=0;y++;}}
     return{y,m,d:dueDay,date:new Date(y,m,dueDay),fmt:`${dueDay} ${THM[m]} ${y+543}`};
   };
+
   const check=(it,type)=>{
-    const done=type==='car'?(it.contractEndDate?parseThDate(it.contractEndDate)<now:false):((it.balance||0)<=0&&(it.minPay||0)<=0);
+    const done=type==='car'
+      ?(it.contractEndDate?parseThDate(it.contractEndDate)<now:false)
+      :((it.balance||0)<=0&&(it.minPay||0)<=0);
+
     if(done)return;
+
     const amt=type==='car'?it.monthly:(it.minPay||0);
-    const nd=nextOcc(it.dueDay);
-    const diffDays=Math.round((nd.date-now)/(1000*60*60*24));
-    const nextDueFmt=nd.fmt;
-    if(isPaid(it)){
-      // จ่ายเดือนนี้แล้ว ไม่ต้องแจ้งเตือน
+
+    // ถ้าจ่ายเดือนนี้ครบและมีสลิปแล้ว ไม่ต้องแจ้งเตือน
+    if(isPaidThisMo(it))return;
+
+    // ถ้ายังไม่จ่าย หรือจ่ายแล้วแต่ยังไม่มีสลิป ให้ยังแจ้งเตือนอยู่
+    if(todayD>it.dueDay){
+      const dd=dueThisMonth(it.dueDay);
+      const overdueDays=Math.max(1,Math.round((now-dd.date)/(1000*60*60*24)));
+      items.push({
+        id:it.id,name:it.name,type,
+        level:'past',
+        diff:overdueDays,
+        dueDay:it.dueDay,
+        amt,
+        nextDueFmt:dd.fmt
+      });
       return;
     }
 
-    // แจ้งเตือนเฉพาะภายในจำนวนวันที่กำหนด
+    const nd=nextOcc(it.dueDay);
+    const diffDays=Math.round((nd.date-now)/(1000*60*60*24));
     if(diffDays<=notifPrefs.warnDays){
       let level=(diffDays===0)?'today':'soon';
-      items.push({id:it.id,name:it.name,type,level,diff:diffDays,dueDay:it.dueDay,amt,nextDueFmt});
+      items.push({id:it.id,name:it.name,type,level,diff:diffDays,dueDay:it.dueDay,amt,nextDueFmt:nd.fmt});
     }
   };
   data.carLoans.forEach(c=>check(c,'car'));
@@ -489,7 +511,7 @@ function renderAlerts(){
   if(!ap)return;
   if(!urgent.length){ap.style.display='none';return;}
   ap.style.display='';
-  ap.innerHTML=`<div class="alert-wrap"><div class="alert-box"><div class="alert-hd"><span class="alert-hd-t">⚠️ แจ้งเตือนการชำระ</span><button class="alert-hd-btn" onclick="openNotifModal()">ตั้งค่า</button></div>${urgent.map(u=>`<div class="alert-row a-${u.level==="next"?"next":u.level==="past"?"past":u.level}"><span class="alert-dot">${u.level==='past'?'🟡':u.level==='today'?'🟠':u.level==='next'?'🔵':'🟡'}</span><div class="alert-info"><span class="alert-name">${esc(u.name)}</span><span class="alert-msg">${u.level==='past'?`ยังไม่ชำระเดือนนี้ · กำหนดถัดไป ${u.nextDueFmt}`:u.level==='today'?`ครบกำหนดชำระวันนี้ (${u.nextDueFmt})`:u.level==='next'?`กำหนดถัดไป ${u.nextDueFmt} (อีก ${u.diff} วัน)`:`กำหนดชำระ ${u.nextDueFmt} (อีก ${u.diff} วัน)`}</span></div><span class="alert-amt">${baht(u.amt)}</span></div>`).join('')}</div></div>`;
+  ap.innerHTML=`<div class="alert-wrap"><div class="alert-box"><div class="alert-hd"><span class="alert-hd-t">⚠️ แจ้งเตือนการชำระ</span><button class="alert-hd-btn" onclick="openNotifModal()">ตั้งค่า</button></div>${urgent.map(u=>`<div class="alert-row a-${u.level==="next"?"next":u.level==="past"?"past":u.level}"><span class="alert-dot">${u.level==='past'?'🟡':u.level==='today'?'🟠':u.level==='next'?'🔵':'🟡'}</span><div class="alert-info"><span class="alert-name">${esc(u.name)}</span><span class="alert-msg">${u.level==='past'?`เลยกำหนดชำระ ${u.nextDueFmt} (${u.diff} วัน)`:u.level==='today'?`ครบกำหนดชำระวันนี้ (${u.nextDueFmt})`:u.level==='next'?`กำหนดถัดไป ${u.nextDueFmt} (อีก ${u.diff} วัน)`:`กำหนดชำระ ${u.nextDueFmt} (อีก ${u.diff} วัน)`}</span></div><span class="alert-amt">${baht(u.amt)}</span></div>`).join('')}</div></div>`;
 }
 
 function renderCars(){
