@@ -203,6 +203,21 @@ body{font-family:'Sarabun',system-ui,sans-serif;background:var(--bg);color:var(-
 @media(min-width:560px){.overlay{justify-content:center;padding:18px;}.sheet{border-radius:18px;max-height:80vh;}}
 @media(prefers-reduced-motion:reduce){.seal-anim{animation:none;display:none;}.prog-fill{transition:none;}}
 
+/* search / back top */
+.search-wrap{padding:12px 14px 0;background:var(--bg);}
+.search-box{background:#fff;border:1px solid var(--border);border-radius:16px;padding:10px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 5px rgba(15,23,42,.06);}
+.search-ico{font-size:18px;color:var(--muted);flex:none;}
+.search-inp{width:100%;border:0;outline:none;font-family:'Sarabun';font-size:15px;color:var(--text);background:transparent;}
+.search-clear{border:0;background:var(--line);color:var(--muted);width:28px;height:28px;border-radius:50%;font-size:16px;cursor:pointer;display:none;align-items:center;justify-content:center;}
+.search-clear.show{display:flex;}
+.search-msg{font-size:12px;color:var(--muted);padding:6px 4px 0;display:none;}
+.dk.search-hit{outline:3px solid rgba(234,88,12,.45);box-shadow:0 8px 28px rgba(234,88,12,.18),0 0 0 1px var(--border);}
+.back-top{position:fixed;right:18px;bottom:22px;z-index:80;width:48px;height:48px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;font-size:22px;box-shadow:0 8px 22px rgba(15,23,42,.28);cursor:pointer;display:none;align-items:center;justify-content:center;}
+.back-top.show{display:flex;}
+.alert-summary{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;background:#fff;border-bottom:1px solid var(--red-border);}
+.alert-summary-lbl{font-size:13px;font-weight:700;color:var(--navy);}
+.alert-summary-val{font-family:'Kanit';font-size:20px;font-weight:700;color:var(--red);white-space:nowrap;}
+
 /* finance logo dropdown */
 .finance-picker{position:relative;}
 .finance-selected{
@@ -242,6 +257,14 @@ body{font-family:'Sarabun',system-ui,sans-serif;background:var(--bg);color:var(-
   </header>
   <div id="statsbar" class="statsbar"></div>
   <div id="alert-panel" style="display:none;"></div>
+  <div class="search-wrap">
+    <div class="search-box">
+      <span class="search-ico">🔎</span>
+      <input id="debt-search" class="search-inp" type="search" placeholder="ค้นหาทะเบียน / ชื่อรายการ / ไฟแนนซ์" oninput="handleDebtSearch(this.value)">
+      <button id="search-clear" class="search-clear" onclick="clearDebtSearch()">×</button>
+    </div>
+    <div id="search-msg" class="search-msg"></div>
+  </div>
   <div class="section">
     <div class="sec-head">
       <span class="sec-title">ค่างวดรถ</span>
@@ -258,6 +281,7 @@ body{font-family:'Sarabun',system-ui,sans-serif;background:var(--bg);color:var(-
   </div>
   <div class="foot">ซิงก์ผ่าน Firebase · ใช้งานได้ทุกอุปกรณ์</div>
 </div>
+<button id="back-top" class="back-top" onclick="goTop()" title="กลับด้านบน">↑</button>
 
 <div class="overlay" id="overlay" onclick="overlayClick(event)">
   <div class="sheet" id="sheet" onclick="event.stopPropagation()"></div>
@@ -514,7 +538,48 @@ function gcalUrl(type,item){
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${details}&recur=${rrule}`;
 }
 
-function renderAll(){renderBell();renderStatsBar();renderAlerts();renderCars();renderCards();}
+function renderAll(){renderBell();renderStatsBar();renderAlerts();renderCars();renderCards();keepSearchAfterRender();}
+
+function allSearchItems(){
+  return [
+    ...data.carLoans.map(x=>({...x,type:'car',text:`${x.name||''} ${x.financeCompany||''} ${x.dueDay||''}`})),
+    ...data.creditCards.map(x=>({...x,type:'card',text:`${x.name||''} ${x.financeCompany||''} ${x.dueDay||''}`}))
+  ];
+}
+function clearSearchHighlight(){document.querySelectorAll('.dk.search-hit').forEach(el=>el.classList.remove('search-hit'));}
+function handleDebtSearch(q){
+  const inp=document.getElementById('debt-search');
+  const clear=document.getElementById('search-clear');
+  const msg=document.getElementById('search-msg');
+  const term=String(q||'').trim().toLowerCase();
+  if(clear)clear.classList.toggle('show',!!term);
+  clearSearchHighlight();
+  if(!term){if(msg){msg.style.display='none';msg.textContent='';}return;}
+  const found=allSearchItems().find(it=>String(it.text||'').toLowerCase().includes(term));
+  if(!found){if(msg){msg.style.display='block';msg.textContent='ไม่พบรายการที่ค้นหา';}return;}
+  if(msg){msg.style.display='block';msg.textContent=`พบ: ${found.name||'รายการนี้'}`;}
+  const card=document.getElementById('card-'+found.id);
+  if(card){
+    card.classList.add('search-hit');
+    setTimeout(()=>card.scrollIntoView({behavior:'smooth',block:'center'}),80);
+  }
+}
+function clearDebtSearch(){
+  const inp=document.getElementById('debt-search');
+  if(inp){inp.value='';inp.focus();}
+  const clear=document.getElementById('search-clear');if(clear)clear.classList.remove('show');
+  const msg=document.getElementById('search-msg');if(msg){msg.style.display='none';msg.textContent='';}
+  clearSearchHighlight();
+}
+function keepSearchAfterRender(){
+  const inp=document.getElementById('debt-search');
+  if(inp&&inp.value.trim())setTimeout(()=>handleDebtSearch(inp.value),120);
+}
+function goTop(){window.scrollTo({top:0,behavior:'smooth'});}
+window.addEventListener('scroll',()=>{
+  const b=document.getElementById('back-top');
+  if(b)b.classList.toggle('show',window.scrollY>280);
+},{passive:true});
 
 function renderBell(){
   const on=notifPrefs.browserEnabled&&typeof Notification!=='undefined'&&Notification.permission==='granted';
@@ -541,7 +606,8 @@ function renderAlerts(){
   if(!ap)return;
   if(!urgent.length){ap.style.display='none';return;}
   ap.style.display='';
-  ap.innerHTML=`<div class="alert-wrap"><div class="alert-box"><div class="alert-hd"><span class="alert-hd-t">⚠️ แจ้งเตือนการชำระ</span><button class="alert-hd-btn" onclick="openNotifModal()">ตั้งค่า</button></div>${urgent.map(u=>`<div class="alert-row a-${u.level==="manual"?"soon":u.level==="next"?"next":u.level==="past"?"past":u.level}"><span class="alert-dot">${u.level==='manual'?'🔔':u.level==='past'?'🟡':u.level==='today'?'🟠':u.level==='next'?'🔵':'🟡'}</span><div class="alert-info"><span class="alert-name">${esc(u.name)}</span><span class="alert-msg">${u.level==='manual'?`รอจ่าย · กำหนดวันที่ ${u.dueDay} ของทุกเดือน`:u.level==='past'?`เลยกำหนดชำระ ${u.nextDueFmt} (${u.diff} วัน)`:u.level==='today'?`ครบกำหนดชำระวันนี้ (${u.nextDueFmt})`:u.level==='next'?`กำหนดถัดไป ${u.nextDueFmt} (อีก ${u.diff} วัน)`:`กำหนดชำระ ${u.nextDueFmt} (อีก ${u.diff} วัน)`}</span></div><span class="alert-amt">${baht(u.amt)}</span></div>`).join('')}</div></div>`;
+  const urgentTotal=urgent.reduce((s,u)=>s+Number(u.amt||0),0);
+  ap.innerHTML=`<div class="alert-wrap"><div class="alert-box"><div class="alert-hd"><span class="alert-hd-t">⚠️ แจ้งเตือนการชำระ</span><button class="alert-hd-btn" onclick="openNotifModal()">ตั้งค่า</button></div><div class="alert-summary"><span class="alert-summary-lbl">วันนี้ต้องจ่ายทั้งหมด</span><span class="alert-summary-val">${baht(urgentTotal)} บาท</span></div>${urgent.map(u=>`<div class="alert-row a-${u.level==="manual"?"soon":u.level==="next"?"next":u.level==="past"?"past":u.level}"><span class="alert-dot">${u.level==='manual'?'🔔':u.level==='past'?'🟡':u.level==='today'?'🟠':u.level==='next'?'🔵':'🟡'}</span><div class="alert-info"><span class="alert-name">${esc(u.name)}</span><span class="alert-msg">${u.level==='manual'?`รอจ่าย · กำหนดวันที่ ${u.dueDay} ของทุกเดือน`:u.level==='past'?`เลยกำหนดชำระ ${u.nextDueFmt} (${u.diff} วัน)`:u.level==='today'?`ครบกำหนดชำระวันนี้ (${u.nextDueFmt})`:u.level==='next'?`กำหนดถัดไป ${u.nextDueFmt} (อีก ${u.diff} วัน)`:`กำหนดชำระ ${u.nextDueFmt} (อีก ${u.diff} วัน)`}</span></div><span class="alert-amt">${baht(u.amt)}</span></div>`).join('')}</div></div>`;
 }
 
 function renderCars(){
